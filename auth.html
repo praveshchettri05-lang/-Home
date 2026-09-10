@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Get Started — 2nd Home</title>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    /* ── Onboarding / Auth Page Extras ── */
+    body { background: #1a0408; }
+
+    .onboard-wrapper {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        linear-gradient(135deg, rgba(61,7,16,0.97) 0%, rgba(92,10,20,0.92) 60%, rgba(139,69,19,0.75) 100%),
+        url('https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1400&q=80') center/cover fixed;
+    }
+
+    /* Step Card */
+    .step-card-wrap {
+      width: 100%;
+      max-width: 540px;
+      position: relative;
+    }
+
+    .onboard-card {
+      background: var(--cream);
+      border-radius: 20px;
+      border: 1px solid var(--gold);
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+      animation: cardIn 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes cardIn {
+      from { opacity:0; transform: translateY(24px) scale(0.97); }
+      to   { opacity:1; transform: translateY(0)   scale(1); }
+    }
+
+    .onboard-header {
+      background: linear-gradient(135deg, var(--burgundy-dk), var(--burgundy));
+      padding: 28px 36px 24px;
+      text-align: center;
+      border-bottom: 2px solid var(--gold);
+    }
+    .onboard-logo {
+      font-family: var(--font-serif);
+      font-size: 1.9rem;
+      color: var(--gold);
+      font-weight: 700;
+      display: block;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .onboard-header .step-label {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.45);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+    .onboard-header h2 {
+      color: var(--white);
+      font-size: 1.5rem;
+      margin-top: 12px;
+    }
+    .onboard-header p { color: rgba(255,255,255,0.7); font-size:0.9rem; margin-top:6px; }
+
+    .onboard-body { padding: 32px 36px; }
+
+    /* Progress dots */
+    .progress-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 0 0;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: rgba(201,168,76,0.25);
+      transition: all 0.3s;
+    }
+    .dot.active { background: var(--gold); width: 24px; border-radius: 4px; }
+    .dot.done   { background: var(--gold); opacity: 0.5; }
+
+    /* Role selection cards */
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 8px 0 24px;
+    }
+    .role-card {
+      border: 2px solid var(--ivory-dk);
+      border-radius: 14px;
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: var(--white);
+    }
+    .role-card:hover { border-color: var(--gold); transform: translateY(-3px); box-shadow: var(--shadow-sm); }
+    .role-card.selected { border-color: var(--burgundy); background: rgba(92,10,20,0.05); }
+    .role-card .role-icon { font-size: 3rem; margin-bottom: 12px; }
+    .role-card h3 { font-size: 1rem; color: var(--burgundy); margin-bottom:6px; }
+    .role-card p  { font-size: 0.78rem; color: var(--gray-dk); }
+
+    /* Auth method buttons */
+    .auth-methods { display: flex; flex-direction: column; gap: 12px; }
+    .auth-method-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      border-radius: 10px;
+      border: 1.5px solid var(--ivory-dk);
+      background: var(--white);
+      cursor: pointer;
+      font-family: var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--walnut);
+      transition: all 0.3s;
+      width: 100%;
+    }
+    .auth-method-btn:hover { border-color: var(--gold); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+    .auth-method-btn .method-icon { font-size: 1.4rem; width: 32px; text-align: center; flex-shrink: 0; }
+    .auth-method-btn.google  { border-color: #dadce0; }
+    .auth-method-btn.phone   { border-color: #d4edda; background: #f8fff9; }
+    .auth-method-btn.email   { background: var(--burgundy); color: var(--white); border-color: var(--burgundy); }
+    .auth-method-btn.email:hover { background: var(--burgundy-lt); }
+
+    .divider-or {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 16px 0;
+      color: var(--gray-mid);
+      font-size: 0.82rem;
+    }
+    .divider-or::before, .divider-or::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--ivory-dk);
+    }
+
+    /* OTP boxes */
+    .otp-boxes {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+    .otp-box {
+      width: 52px; height: 60px;
+      border: 2px solid var(--gray-mid);
+      border-radius: 10px;
+      text-align: center;
+      font-size: 1.6rem;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      color: var(--burgundy);
+      outline: none;
+      transition: all 0.3s;
+      background: var(--white);
+    }
+    .otp-box:focus { border-color: var(--burgundy); box-shadow: 0 0 0 3px rgba(92,10,20,0.12); }
+
+    /* Location panel */
+    .location-options { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    .location-opt-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px 20px;
+      border-radius: 12px;
+      border: 2px solid var(--ivory-dk);
+      background: var(--white);
+      cursor: pointer;
+      font-family: var(--font-sans);
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--walnut);
+      transition: all 0.3s;
+      width: 100%;
+    }
+    .location-opt-btn:hover { border-color: var(--burgundy); }
+    .location-opt-btn.primary-opt { border-color: var(--gold); background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.02)); }
+    .location-opt-btn .loc-icon { font-size: 1.6rem; flex-shrink: 0; }
+
+    #location-map-pick { height: 240px; border-radius: 10px; border: 2px solid var(--ivory-dk); margin-bottom: 12px; }
+    .location-result {
+      background: var(--ivory-dk);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 0.87rem;
+      color: var(--walnut);
+      margin-top: 12px;
+      display: none;
+    }
+    .location-result.show { display: block; }
+    .location-result .loc-addr { font-weight: 600; margin-bottom: 2px; }
+    .location-result .loc-coords { color: var(--gray-dk); font-size: 0.78rem; }
+
+    /* How-to steps */
+    .howto-steps { display: flex; flex-direction: column; gap: 18px; }
+    .howto-step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .howto-step .step-bubble {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--burgundy);
+      color: var(--gold);
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 2px solid var(--gold);
+    }
+    .howto-step .step-txt h4 { font-size: 0.95rem; color: var(--burgundy); margin-bottom: 2px; }
+    .howto-step .step-txt p  { font-size: 0.82rem; color: var(--gray-dk); line-height: 1.5; }
+
+    /* Google mock popup */
+    .google-popup {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .google-popup.show { display: flex; }
+    .google-popup-box {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      width: 360px;
+      text-align: center;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.3);
+    }
+    .google-popup-box .g-logo { font-size: 2.5rem; margin-bottom: 12px; }
+    .google-popup-box h3 { color: #202124; font-family: 'Roboto', sans-serif; font-size: 1.2rem; margin-bottom:6px; }
+    .google-popup-box p  { color: #5f6368; font-size: 0.88rem; margin-bottom: 20px; }
+    .google-account {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid #dadce0;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 10px;
+    }
+    .google-account:hover { background: #f8f9fa; }
+    .google-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--burgundy); color: white; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
+
+    /* Back button */
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--gray-dk);
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0;
+      margin-bottom: 16px;
+      font-family: var(--font-sans);
+      transition: color 0.2s;
+    }
+    .back-btn:hover { color: var(--burgundy); }
+
+    /* Resend timer */
+    .resend-row {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--gray-dk);
+      margin-top: 16px;
+    }
+    .resend-row a { color: var(--burgundy); font-weight: 600; cursor: pointer; }
+    .resend-row a.disabled { pointer-events: none; color: var(--gray-mid); }
+
+    /* Form toggle (login / register) */
+    .form-mode-toggle {
+      display: flex;
+      background: var(--ivory-dk);
+      border-radius: 8px;
+      padding: 4px;
+      margin-bottom: 22px;
+    }
+    .form-mode-btn {
+      flex: 1;
+      padding: 9px;
+      border: none;
+      background: none;
+      border-radius: 6px;
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--gray-dk);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .form-mode-btn.active { background: var(--burgundy); color: var(--white); }
+
+    .skip-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.5);
+    }
+    .skip-link a { color: rgba(255,255,255,0.7); text-decoration: underline; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<!-- Google Sign-in Mock Popup -->
+<div class="google-popup" id="google-popup">
+  <div class="google-popup-box">
+    <div class="g-logo">🔵</div>
+    <h3>Sign in with Google</h3>
+    <p>Choose an account to continue to 2nd Home</p>
+    <div class="google-account" onclick="completeGoogleLogin('Demo User', 'demo@gmail.com')">
+      <div class="google-avatar">D</div>
+      <div style="text-align:left;">
+        <div style="font-weight:600;color:#202124;">Demo User</div>
+        <div style="font-size:0.8rem;color:#5f6368;">demo@gmail.com</div>
+      </div>
+    </div>
+    <div class="google-account" onclick="completeGoogleLogin('Another User', 'another@gmail.com')">
+      <div class="google-avatar" style="background:#1a73e8;">A</div>
+      <div style="text-align:left;">
+        <div style="font-weight:600;color:#202124;">Another User</div>
+        <div style="font-size:0.8rem;color:#5f6368;">another@gmail.com</div>
+      </div>
+    </div>
+    <button onclick="closeGooglePopup()" style="width:100%;margin-top:16px;padding:10px;border:1px solid #dadce0;border-radius:8px;background:none;cursor:pointer;font-family:sans-serif;">Cancel</button>
+  </div>
+</div>
+
+<!-- Main Wrapper -->
+<div class="onboard-wrapper">
+  <div class="step-card-wrap">
+
+    <!-- ══════════════════════════════════
+         STEP 0 — Welcome / How To Use
+    ══════════════════════════════════ -->
+    <div id="step-0" class="onboard-card">
+      <div class="onboard-header">
+        <span class="onboard-logo">🏛️ 2nd Home</span>
+        <p class="step-label">Welcome</p>
+        <h2>India's Classic Rental Marketplace</h2>
+        <p>Everything you need to find or list a property — in one place.</p>
+      </div>
+      <div class="onboard-body">
+        <div class="howto-steps">
+          <div class="howto-step">
+            <div class="step-bubble">1</div>
+            <div class="step-txt">
+              <h4>🏠 Choose Your Role</h4>
+              <p>Tell us if you're looking for a space to rent, or if you own a property to list.</p>
+            </div>
+          </div>
+          <div class="howto-step">
+            <div class="step-bubble">2</div>
+            <div class="step-txt">
+              <h4>📍 Share Your Location</h4>
+              <p>We use your precise location to show rooms nearby, or to pin your property on the map for renters.</p>
+            </div>
+          </div>
+          <div class="howto-step">
+            <div class="step-bubble">3</div>
+            <div class="step-txt">
+              <h4>🔑 Sign In / Register</h4>
+              <p>Create an account with Google, phone OTP, or email & password — takes under 60 seconds.</p>
+            </div>
+          </div>
+          <div class="howto-step">
+            <div class="step-bubble">4</div>
+            <div class="step-txt">
+              <h4>💬 Connect & Book</h4>
+              <p>Browse listings, message owners directly, and submit booking requests — all from your dashboard.</p>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block btn-lg" style="margin-top:28px;" onclick="goStep(1)">
+          Get Started →
+        </button>
+        <div class="progress-dots" style="margin-top:20px;">
+          <div class="dot active" id="dot-0"></div>
+          <div class="dot" id="dot-1"></div>
+          <div class="dot" id="dot-2"></div>
+          <div class="dot" id="dot-3"></div>
+          <div class="dot" id="dot-4"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 1 — Role Selection
+    ══════════════════════════════════ -->
+    <div id="step-1" class="onboard-card" style="display:none;">
+      <div class="onboard-header">
+        <span class="onboard-logo">🏛️ 2nd Home</span>
+        <p class="step-label">Step 1 of 4</p>
+        <h2>Who Are You?</h2>
+        <p>Select your role to personalize your experience.</p>
+      </div>
+      <div class="onboard-body">
+        <div class="role-grid">
+          <div class="role-card" id="role-renter" onclick="selectRole('renter')">
+            <div class="role-icon">🔍</div>
+            <h3>I'm Looking for a Space</h3>
+            <p>Browse rooms, PGs, shops & garages to rent</p>
+          </div>
+          <div class="role-card" id="role-owner" onclick="selectRole('owner')">
+            <div class="role-icon">🏡</div>
+            <h3>I Own a Property</h3>
+            <p>List my room, PG, shop or garage for rent</p>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block btn-lg" id="role-next-btn" onclick="goStep(2)" disabled style="opacity:0.5;cursor:not-allowed;">
+          Continue →
+        </button>
+        <div class="progress-dots" style="margin-top:20px;">
+          <div class="dot done" id="dot2-0"></div>
+          <div class="dot active" id="dot2-1"></div>
+          <div class="dot" id="dot2-2"></div>
+          <div class="dot" id="dot2-3"></div>
+          <div class="dot" id="dot2-4"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 2 — Location
+    ══════════════════════════════════ -->
+    <div id="step-2" class="onboard-card" style="display:none;">
+      <div class="onboard-header">
+        <span class="onboard-logo">🏛️ 2nd Home</span>
+        <p class="step-label">Step 2 of 4</p>
+        <h2 id="location-heading">📍 Your Location</h2>
+        <p id="location-subtext">We'll find rooms closest to you.</p>
+      </div>
+      <div class="onboard-body">
+        <div class="location-options">
+          <button class="location-opt-btn primary-opt" onclick="detectGPS()">
+            <span class="loc-icon">📡</span>
+            <div style="text-align:left;">
+              <div style="font-weight:700;margin-bottom:2px;">Use My Current Location</div>
+              <div style="font-size:0.78rem;color:var(--gray-dk);">Automatically detect via GPS — most accurate</div>
+            </div>
+          </button>
+          <button class="location-opt-btn" onclick="showMapPicker()">
+            <span class="loc-icon">🗺️</span>
+            <div style="text-align:left;">
+              <div style="font-weight:700;margin-bottom:2px;">Pick on Map</div>
+              <div style="font-size:0.78rem;color:var(--gray-dk);">Click anywhere on the map to set location</div>
+            </div>
+          </button>
+        </div>
+
+        <!-- City search -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <input type="text" id="loc-city-input" class="form-control" placeholder="🔍 Search city or area…" style="flex:1;"/>
+          <button class="btn btn-outline" onclick="searchLocCity()">Go</button>
+        </div>
+
+        <!-- Map -->
+        <div id="location-map-pick" style="display:none;"></div>
+
+        <!-- Result -->
+        <div class="location-result" id="location-result">
+          <div class="loc-addr" id="loc-address">Fetching address…</div>
+          <div class="loc-coords" id="loc-coords"></div>
+        </div>
+
+        <button class="btn btn-primary btn-block btn-lg" id="loc-next-btn" style="margin-top:20px;opacity:0.5;cursor:not-allowed;" onclick="goStep(3)" disabled>
+          Confirm Location →
+        </button>
+        <button class="btn btn-outline btn-block" style="margin-top:10px;" onclick="skipLocation()">
+          Skip for Now
+        </button>
+        <div class="progress-dots" style="margin-top:20px;">
+          <div class="dot done"></div>
+          <div class="dot done"></div>
+          <div class="dot active"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 3 — Sign In Method
+    ══════════════════════════════════ -->
+    <div id="step-3" class="onboard-card" style="display:none;">
+      <div class="onboard-header">
+        <span class="onboard-logo">🏛️ 2nd Home</span>
+        <p class="step-label">Step 3 of 4</p>
+        <h2>Sign In or Register</h2>
+        <p>Choose how you'd like to continue.</p>
+      </div>
+      <div class="onboard-body">
+        <div class="auth-methods">
+          <button class="auth-method-btn google" onclick="triggerGoogleLogin()">
+            <span class="method-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            </span>
+            Continue with Google
+          </button>
+          <button class="auth-method-btn phone" onclick="goToPhone()">
+            <span class="method-icon">📱</span>
+            Continue with Phone & OTP
+          </button>
+          <div class="divider-or">or</div>
+          <button class="auth-method-btn email" onclick="goToEmail()">
+            <span class="method-icon">✉️</span>
+            Continue with Email & Password
+          </button>
+        </div>
+        <div class="progress-dots" style="margin-top:24px;">
+          <div class="dot done"></div>
+          <div class="dot done"></div>
+          <div class="dot done"></div>
+          <div class="dot active"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 3b — Phone + OTP
+    ══════════════════════════════════ -->
+    <div id="step-phone" class="onboard-card" style="display:none;">
+      <div class="onboard-header">
+        <span class="onboard-logo">🏛️ 2nd Home</span>
+        <p class="step-label">Phone Verification</p>
+        <h2>📱 Enter Your Phone</h2>
+        <p>We'll send a 6-digit OTP via SMS.</p>
+      </div>
+      <div class="onboard-body">
+        <div id="phone-input-section">
+          <button class="back-btn" onclick="showStep('step-3')">← Back</button>
+          <div class="form-group">
+            <label>Phone Number<span class="required">*</span></label>
+            <div style="display:flex;gap:8px;">
+              <select class="form-control" style="width:90px;flex-shrink:0;">
+                <option>🇮🇳 +91</option>
+                <option>🇺🇸 +1</option>
+                <option>🇬🇧 +44</option>
+                <option>🇦🇪 +971</option>
+              </select>
+              <input type="tel" id="phone-number" class="form-control" placeholder="98765 43210" maxlength="10"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Full Name<span class="required">*</span></label>
+            <input type="text" id="phone-name" class="form-control" placeholder="Your full name"/>
+          </div>
+          <button class="btn btn-primary btn-block btn-lg" onclick="sendOTP()">Send OTP →</button>
+        </div>
+
+        <div id="otp-section" style="display:none;">
+          <button class="back-btn" onclick="showSection('phone-input-section','otp-section')">← Change Number</button>
+          <p style="text-align:center;color:var(--walnut);margin-bottom:4px;">Enter the 6-digit OTP sent to</p>
+          <p style="text-align:center;font-weight:700;color:var(--burgundy);margin-bottom:0;" id="otp-phone-display"></p>
+          <div class="otp-boxes" id="otp-boxes">
+            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
+            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
+            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
+            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
+            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
+            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
+          </div>
+          <div style="background:rgba(201,168,76,0.12);border:1px solid var(--gold);border-radius:8px;padding:10px 14px;text-align:center;font-size:0.82rem;color:var(--saddle);margin-bottom:12px;">
+            🔑 Demo OTP: <strong>123456</strong>
+          </div>
+          <button class="btn btn-primary btn-block btn-lg" onclick="verifyOTP()">Verify & Continue →</button>
+          <div class="resend-row">
+            <span id="resend-timer">Resend OTP in <strong id="timer-count">30</strong>s</span>
+            <span id="resend-link" style="display:none;"><a onclick="resendOTP()">Resend OTP</a></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 3c — Email Form
+    ══════════════════════════════════ -->
+    <div id="step-email" class="onboard-card" style="display:none;">
+      <div class="onboard-header">
+        <span class="onboard-logo">🏛️ 2nd Home</span>
+        <p class="step-label">Email Sign In</p>
+        <h2>✉️ Email & Password</h2>
+        <p id="email-step-sub">Create your account to get started.</p>
+      </div>
+      <div class="onboard-body">
+        <button class="back-btn" onclick="showStep('step-3')">← Back</button>
+        <div class="form-mode-toggle">
+          <button class="form-mode-btn active" id="mode-register" onclick="setEmailMode('register')">Register</button>
+          <button class="form-mode-btn" id="mode-login" onclick="setEmailMode('login')">Login</button>
+        </div>
+
+        <!-- Register fields -->
+        <div id="register-fields">
+          <div class="form-group">
+            <label>Full Name<span class="required">*</span></label>
+            <input type="text" class="form-control" id="reg-name" placeholder="Your full name"/>
+          </div>
+          <div class="form-group">
+            <label>Phone Number</label>
+            <input type="tel" class="form-control" id="reg-phone" placeholder="98765 43210"/>
+          </div>
+          <div id="owner-extra-fields" style="display:none;">
+            <div class="form-group">
+              <label>City</label>
+              <input type="text" class="form-control" id="reg-city" placeholder="Your city"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Common fields -->
+        <div class="form-group">
+          <label>Email Address<span class="required">*</span></label>
+          <input type="email" class="form-control" id="reg-email" placeholder="you@example.com"/>
+        </div>
+        <div class="form-group">
+          <label>Password<span class="required">*</span></label>
+          <div style="position:relative;">
+            <input type="password" class="form-control" id="reg-password" placeholder="Minimum 6 characters" style="padding-right:44px;"/>
+            <button onclick="togglePwd('reg-password')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-dk);">👁</button>
+          </div>
+        </div>
+        <div class="form-group" id="confirm-pwd-group">
+          <label>Confirm Password<span class="required">*</span></label>
+          <input type="password" class="form-control" id="reg-confirm" placeholder="Re-enter password"/>
+        </div>
+        <div class="form-error" id="email-error" style="margin-bottom:12px;"></div>
+
+        <button class="btn btn-primary btn-block btn-lg" onclick="submitEmailAuth()">
+          <span id="submit-btn-text">Create Account →</span>
+        </button>
+
+        <div class="auth-switch" style="margin-top:16px;">
+          <span id="switch-text">Already have an account?</span>
+          <a onclick="setEmailMode('login')" id="switch-link" style="color:var(--burgundy);font-weight:700;cursor:pointer;"> Login</a>
+        </div>
+        <div class="progress-dots" style="margin-top:20px;">
+          <div class="dot done"></div><div class="dot done"></div><div class="dot done"></div>
+          <div class="dot active"></div><div class="dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════
+         STEP 4 — Success / Profile Complete
+    ══════════════════════════════════ -->
+    <div id="step-4" class="onboard-card" style="display:none;">
+      <div class="onboard-header">
+        <span class="onboard-logo">🏛️ 2nd Home</span>
+        <p class="step-label">Step 4 of 4</p>
+        <h2 id="success-heading">🎉 You're All Set!</h2>
+        <p id="success-subtext">Your account has been created successfully.</p>
+      </div>
+      <div class="onboard-body" style="text-align:center;">
+        <div style="font-size:4rem;margin-bottom:16px;" id="success-icon">✓</div>
+        <h3 style="color:var(--burgundy);margin-bottom:8px;" id="success-name">Welcome!</h3>
+        <p style="color:var(--gray-dk);margin-bottom:28px;" id="success-msg">Ready to explore 2nd Home.</p>
+
+        <div style="background:var(--ivory-dk);border-radius:12px;padding:16px;margin-bottom:24px;text-align:left;">
+          <div style="font-size:0.82rem;color:var(--gray-dk);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;font-weight:700;">Your Quick Summary</div>
+          <div style="display:flex;gap:12px;align-items:center;">
+            <div style="font-size:1.8rem;" id="success-role-icon">🔍</div>
+            <div>
+              <div style="font-weight:700;color:var(--walnut);" id="success-role-label">Renter</div>
+              <div style="font-size:0.8rem;color:var(--gray-dk);" id="success-loc-label">📍 Location saved</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary btn-block btn-lg" id="go-dashboard-btn" onclick="goToDashboard()">
+          Go to My Dashboard →
+        </button>
+        <div style="margin-top:12px;">
+          <a href="listings.html" style="color:var(--gray-dk);font-size:0.85rem;">Browse listings first</a>
+        </div>
+        <div class="progress-dots" style="margin-top:20px;">
+          <div class="dot done"></div><div class="dot done"></div><div class="dot done"></div>
+          <div class="dot done"></div><div class="dot active"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /step-card-wrap -->
+</div><!-- /onboard-wrapper -->
+
+<div class="toast-container"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/app.js"></script>
+<script src="js/map.js"></script>
+<script>
+  /* ============================================================
+     ONBOARDING STATE
+  ============================================================ */
+  let selectedRole = null;
+  let userLat = null, userLng = null, userAddress = '';
+  let emailMode = 'register'; // 'register' | 'login'
+  let pickerMapInited = false;
+  let pickerMap = null, pickerMarker = null;
+  let timerInterval = null;
+
+  // If already logged in, redirect
+  if (Auth.isLoggedIn()) {
+    const s = Auth.getSession();
+    window.location.href = s.role + '-dashboard.html';
+  }
+
+  // URL param: ?role=owner pre-selects role and skips to step 1
+  const urlRole = new URLSearchParams(window.location.search).get('role');
+  if (urlRole === 'owner' || urlRole === 'renter') {
+    selectedRole = urlRole;
+  }
+
+  /* ── Step Navigation ── */
+  function goStep(n) {
+    const steps = ['step-0','step-1','step-2','step-3','step-4'];
+    steps.forEach(id => { const el = document.getElementById(id); if(el) el.style.display='none'; });
+    document.querySelectorAll('[id^="step-phone"],[id^="step-email"]').forEach(el => el.style.display='none');
+    const target = document.getElementById('step-'+n);
+    if (target) { target.style.display='block'; target.style.animation='cardIn 0.4s cubic-bezier(0.22,1,0.36,1)'; }
+
+    // Init map on step 2
+    if (n === 2) initLocationMap();
+
+    // Customize step 2 text for owner
+    if (n === 2 && selectedRole === 'owner') {
+      document.getElementById('location-heading').textContent = '📍 Property Location Area';
+      document.getElementById('location-subtext').textContent = 'Where is your property located? Renters nearby will find you.';
+    }
+  }
+
+  function showStep(id) {
+    const cards = document.querySelectorAll('.onboard-card');
+    cards.forEach(c => c.style.display='none');
+    const el = document.getElementById(id);
+    if (el) { el.style.display='block'; el.style.animation='cardIn 0.4s cubic-bezier(0.22,1,0.36,1)'; }
+  }
+
+  function showSection(show, hide) {
+    const s = document.getElementById(show);
+    const h = document.getElementById(hide);
+    if (s) s.style.display='block';
+    if (h) h.style.display='none';
+  }
+
+  /* ── Role Selection ── */
+  function selectRole(role) {
+    selectedRole = role;
+    document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('role-'+role).classList.add('selected');
+    const btn = document.getElementById('role-next-btn');
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    // Show owner extra fields if needed
+    const ownerExtra = document.getElementById('owner-extra-fields');
+    if (ownerExtra) ownerExtra.style.display = role === 'owner' ? 'block' : 'none';
+  }
+
+  // Pre-select from URL
+  if (urlRole) {
+    document.addEventListener('DOMContentLoaded', () => {
+      if (urlRole) selectRole(urlRole);
+    });
+  }
+
+  /* ── Location ── */
+  function initLocationMap() {
+    const mapEl = document.getElementById('location-map-pick');
+    if (!mapEl || pickerMapInited) return;
+    pickerMapInited = true;
+    mapEl.style.display = 'block';
+
+    waitForLeaflet(() => {
+      pickerMap = L.map('location-map-pick');
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap', maxZoom: 19
+      }).addTo(pickerMap);
+
+      const icon = L.divIcon({
+        className: '',
+        html: `<div style="width:32px;height:32px;background:#5c0a14;border:3px solid #c9a84c;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,.4);"></div>`,
+        iconAnchor: [16,32]
+      });
+
+      pickerMap.setView([20.5937, 78.9629], 5);
+      pickerMap.on('click', e => {
+        const {lat,lng} = e.latlng;
+        if (pickerMarker) pickerMap.removeLayer(pickerMarker);
+        pickerMarker = L.marker([lat,lng],{icon,draggable:true}).addTo(pickerMap);
+        pickerMarker.on('dragend', () => { const p=pickerMarker.getLatLng(); setLocation(p.lat,p.lng); });
+        setLocation(lat,lng);
+      });
+    });
+  }
+
+  function detectGPS() {
+    if (!navigator.geolocation) { showToast('Geolocation not supported on this browser.','error'); return; }
+    showToast('Detecting your location…','info',2000);
+    navigator.geolocation.getCurrentPosition(
+      pos => setLocation(pos.coords.latitude, pos.coords.longitude),
+      err => { showToast('Could not detect location. Please pick on map or search.','error'); initLocationMap(); }
+    );
+  }
+
+  function showMapPicker() {
+    document.getElementById('location-map-pick').style.display='block';
+    initLocationMap();
+    if (pickerMap) setTimeout(() => pickerMap.invalidateSize(), 200);
+  }
+
+  async function setLocation(lat, lng) {
+    userLat = lat; userLng = lng;
+
+    const result  = document.getElementById('location-result');
+    const addrEl  = document.getElementById('loc-address');
+    const coordEl = document.getElementById('loc-coords');
+    if (result) result.classList.add('show');
+    if (addrEl) addrEl.textContent = 'Fetching address…';
+    if (coordEl) coordEl.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+
+    if (pickerMap) { pickerMap.setView([lat,lng],15); }
+
+    try {
+      const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+      const data = await res.json();
+      userAddress = data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      if (addrEl) addrEl.textContent = '📍 ' + userAddress;
+    } catch(e) {
+      userAddress = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      if (addrEl) addrEl.textContent = '📍 ' + userAddress;
+    }
+
+    // Enable next button
+    const btn = document.getElementById('loc-next-btn');
+    if (btn) { btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer'; }
+    showToast('Location set!','success',2000);
+  }
+
+  async function searchLocCity() {
+    const val = document.getElementById('loc-city-input').value.trim();
+    if (!val) return;
+    try {
+      const res  = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&limit=1`);
+      const data = await res.json();
+      if (data.length > 0) {
+        const lat = parseFloat(data[0].lat), lng = parseFloat(data[0].lon);
+        document.getElementById('location-map-pick').style.display='block';
+        initLocationMap();
+        waitForLeaflet(() => {
+          if (pickerMap) { pickerMap.setView([lat,lng],13); }
+          setLocation(lat, lng);
+        });
+      } else showToast('City not found.','error');
+    } catch(e) { showToast('Search failed. Check connection.','error'); }
+  }
+
+  function skipLocation() {
+    userLat = null; userLng = null;
+    goStep(3);
+  }
+
+  /* ── Google Login ── */
+  async function triggerGoogleLogin() {
+    const role = selectedRole || 'renter';
+    const provider = new firebase.auth.GoogleAuthProvider();
+    try {
+      const result = await firebase.auth().signInWithPopup(provider);
+      const res = await Auth.handleProviderLogin(result.user, role, { loginMethod: 'google', lat: userLat, lng: userLng, address: userAddress });
+      if (!res.ok) {
+        showToast(res.msg, 'error');
+        return;
+      }
+      completeOnboarding(res.user.name);
+    } catch (error) {
+      showToast(error.message, 'error');
+    }
+  }
+
+  // We no longer need the fake popup or completeGoogleLogin
+  function closeGooglePopup() {
+    const p = document.getElementById('google-popup');
+    if (p) p.classList.remove('show');
+  }
+
+  /* ── Phone / OTP ── */
+  function goToPhone() { showStep('step-phone'); }
+
+  function sendOTP() {
+    const phone = document.getElementById('phone-number').value.trim();
+    const name  = document.getElementById('phone-name').value.trim();
+    if (!phone || phone.length < 10) { showToast('Enter a valid 10-digit phone number.','error'); return; }
+    if (!name) { showToast('Please enter your name.','error'); return; }
+    // Simulate OTP send
+    document.getElementById('otp-phone-display').textContent = '+91 ' + phone;
+    document.getElementById('phone-input-section').style.display='none';
+    document.getElementById('otp-section').style.display='block';
+    initOTPBoxes();
+    startResendTimer();
+    showToast('OTP sent to +91 ' + phone,'success');
+  }
+
+  function initOTPBoxes() {
+    const boxes = document.querySelectorAll('.otp-box');
+    boxes.forEach((box, i) => {
+      box.value = '';
+      box.addEventListener('input', () => {
+        if (box.value.length === 1 && boxes[i+1]) boxes[i+1].focus();
+        else if (!box.value && boxes[i-1]) boxes[i-1].focus();
+      });
+      box.addEventListener('keydown', e => {
+        if (e.key === 'Backspace' && !box.value && boxes[i-1]) { boxes[i-1].focus(); boxes[i-1].value=''; }
+      });
+      box.addEventListener('paste', e => {
+        const paste = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
+        [...paste].forEach((ch, idx) => { if(boxes[idx]) boxes[idx].value=ch; });
+        if (boxes[paste.length-1]) boxes[paste.length-1].focus();
+        e.preventDefault();
+      });
+    });
+    if (boxes[0]) boxes[0].focus();
+  }
+
+  function startResendTimer() {
+    let count = 30;
+    document.getElementById('resend-timer').style.display='inline';
+    document.getElementById('resend-link').style.display='none';
+    document.getElementById('timer-count').textContent = count;
+    clearInterval(timerInterval);
+    timerInterval = setInterval(() => {
+      count--;
+      const el = document.getElementById('timer-count');
+      if (el) el.textContent = count;
+      if (count <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('resend-timer').style.display='none';
+        document.getElementById('resend-link').style.display='inline';
+      }
+    }, 1000);
+  }
+
+  function resendOTP() { showToast('OTP resent!','success'); startResendTimer(); }
+
+  async function verifyOTP() {
+    const otp = [...document.querySelectorAll('.otp-box')].map(b=>b.value).join('');
+    if (otp.length < 6) { showToast('Enter all 6 digits.','error'); return; }
+    if (otp !== '123456') { showToast('Invalid OTP. Use demo OTP: 123456','error'); return; }
+
+    const name  = document.getElementById('phone-name').value.trim();
+    const phone = document.getElementById('phone-number').value.trim();
+    const email = 'phone_' + phone + '@2nd Home.local';
+    const role  = selectedRole || 'renter';
+
+    let res;
+    if (role === 'renter') {
+      res = await Auth.registerRenter({ name, email, password:'otp_' + phone, phone, loginMethod: 'phone', lat: userLat, lng: userLng, address: userAddress });
+    } else {
+      res = await Auth.registerOwner({ name, email, password:'otp_' + phone, phone, loginMethod: 'phone', lat: userLat, lng: userLng, address: userAddress });
+    }
+
+    if (!res.ok) {
+      res = await Auth.login(email, 'otp_' + phone, role);
+      if (!res.ok) {
+        showToast(res.msg, 'error');
+        return;
+      }
+    }
+    completeOnboarding(name);
+  }
+
+  /* ── Email / Password ── */
+  function goToEmail() { showStep('step-email'); setEmailMode('register'); }
+
+  function setEmailMode(mode) {
+    emailMode = mode;
+    document.getElementById('mode-register').classList.toggle('active', mode === 'register');
+    document.getElementById('mode-login').classList.toggle('active',    mode === 'login');
+    document.getElementById('register-fields').style.display     = mode === 'register' ? 'block' : 'none';
+    document.getElementById('confirm-pwd-group').style.display   = mode === 'register' ? 'block' : 'none';
+    document.getElementById('submit-btn-text').textContent       = mode === 'register' ? 'Create Account →' : 'Login →';
+    document.getElementById('switch-text').textContent           = mode === 'register' ? 'Already have an account?' : "Don't have an account?";
+    document.getElementById('switch-link').textContent           = mode === 'register' ? ' Login' : ' Register';
+    document.getElementById('switch-link').onclick               = () => setEmailMode(mode === 'register' ? 'login' : 'register');
+    document.getElementById('email-step-sub').textContent        = mode === 'register' ? 'Create your account to get started.' : 'Welcome back to 2nd Home.';
+    document.getElementById('email-error').textContent = '';
+  }
+
+  function togglePwd(id) {
+    const el = document.getElementById(id);
+    el.type = el.type === 'password' ? 'text' : 'password';
+  }
+
+  async function submitEmailAuth() {
+    const email = document.getElementById('reg-email').value.trim();
+    const pass  = document.getElementById('reg-password').value;
+    const errEl = document.getElementById('email-error');
+    errEl.textContent = '';
+
+    if (!email || !pass) { errEl.textContent = 'Email and password are required.'; return; }
+    if (pass.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+
+    const role = selectedRole || 'renter';
+
+    if (emailMode === 'register') {
+      const name    = document.getElementById('reg-name').value.trim();
+      const phone   = document.getElementById('reg-phone').value.trim();
+      const city    = document.getElementById('reg-city')?.value.trim() || '';
+      const confirm = document.getElementById('reg-confirm').value;
+      if (!name) { errEl.textContent = 'Full name is required.'; return; }
+      if (pass !== confirm) { errEl.textContent = 'Passwords do not match.'; return; }
+
+      const data = { name, email, password: pass, phone, city, loginMethod:'email', lat: userLat, lng: userLng, address: userAddress };
+      const res = await (role === 'renter' ? Auth.registerRenter(data) : Auth.registerOwner(data));
+      if (!res.ok) { errEl.textContent = res.msg; return; }
+      completeOnboarding(name);
+    } else {
+      const res = await Auth.login(email, pass, role);
+      if (!res.ok) { errEl.textContent = res.msg; return; }
+      const session = Auth.getSession();
+      completeOnboarding(session.name);
+    }
+  }
+
+  /* ── Complete Onboarding ── */
+  function completeOnboarding(name) {
+    const session = Auth.getSession();
+    if (!session) { window.location.href = 'index.html'; return; }
+
+    // Update user/owner location if available
+    if (userLat && userLng) {
+      const dbKey = session.role === 'owner' ? DB.OWNERS : DB.USERS;
+      const list  = getDB(dbKey);
+      const idx   = list.findIndex(u => u.id === session.id);
+      if (idx !== -1) {
+        list[idx].lat = userLat;
+        list[idx].lng = userLng;
+        list[idx].address = userAddress;
+        setDB(dbKey, list);
+      }
+    }
+
+    // Show success screen
+    document.querySelectorAll('.onboard-card').forEach(c => c.style.display='none');
+    const s4 = document.getElementById('step-4');
+    s4.style.display = 'block';
+    s4.style.animation = 'cardIn 0.4s cubic-bezier(0.22,1,0.36,1)';
+
+    document.getElementById('success-name').textContent      = 'Welcome, ' + name + '! 👋';
+    document.getElementById('success-role-icon').textContent = session.role === 'owner' ? '🏡' : '🔍';
+    document.getElementById('success-role-label').textContent= session.role === 'owner' ? 'Property Owner' : 'Room Seeker';
+    document.getElementById('success-loc-label').textContent = userAddress
+      ? '📍 ' + userAddress.split(',').slice(0,2).join(', ')
+      : '📍 Location not set';
+
+    if (session.role === 'owner') {
+      document.getElementById('success-heading').textContent  = '🎉 Account Ready!';
+      document.getElementById('success-msg').textContent      = 'Start listing your property from your dashboard.';
+    }
+  }
+
+  function goToDashboard() {
+    const s = Auth.getSession();
+    if (s) window.location.href = s.role + '-dashboard.html';
+    else   window.location.href = 'index.html';
+  }
+</script>
+</body>
+</html>
+

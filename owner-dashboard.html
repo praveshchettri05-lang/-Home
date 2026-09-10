@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Owner Dashboard — 2nd Home</title>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="css/dashboard.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar" style="position:relative;top:0;transform:none;box-shadow:none;">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><span class="logo-icon">🏛️</span>2nd Home<span>INDIA</span></a>
+    <ul class="nav-links">
+      <li><a href="listings.html">Browse</a></li>
+      <li><a href="index.html">Home</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="dashboard-page">
+  <div class="dashboard-layout">
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="dash-sidebar">
+      <div class="dash-profile">
+        <div class="dash-avatar" id="owner-initial">O</div>
+        <div class="dash-name" id="owner-name">Owner</div>
+        <div class="dash-role">Property Owner</div>
+        <div id="owner-email" style="color:rgba(255,255,255,0.35);font-size:0.75rem;margin-top:4px;"></div>
+      </div>
+
+      <div class="dash-nav-section">Main</div>
+      <div class="dash-nav-item active" data-panel="listings"><span class="nav-icon">🏠</span> My Listings</div>
+      <div class="dash-nav-item" data-panel="add"><span class="nav-icon">➕</span> Add New Listing</div>
+
+      <div class="dash-nav-section">Inbox</div>
+      <div class="dash-nav-item" data-panel="inquiries">
+        <span class="nav-icon">💬</span> Inquiries
+        <span class="badge-dot" id="inquiry-badge" style="display:none;">0</span>
+      </div>
+      <div class="dash-nav-item" data-panel="bookings"><span class="nav-icon">📅</span> Bookings</div>
+
+      <div class="dash-nav-section">Account</div>
+      <div class="dash-nav-item" data-panel="profile"><span class="nav-icon">👤</span> My Profile</div>
+      <div class="dash-logout" id="logout-btn"><span>🚪</span> Logout</div>
+    </aside>
+
+    <!-- ═══ MAIN ═══ -->
+    <main class="dash-main">
+
+      <!-- ══ PANEL: My Listings ══ -->
+      <div class="dash-panel active" id="panel-listings">
+        <div class="dash-panel-header">
+          <div>
+            <h2>My Listings</h2>
+            <p>All your listed properties</p>
+          </div>
+          <button class="btn btn-primary" onclick="showPanel('add')">➕ Add New Listing</button>
+        </div>
+        <div id="my-listings-container">
+          <div class="empty-state"><span class="empty-icon">⏳</span><h3>Loading…</h3></div>
+        </div>
+      </div>
+
+      <!-- ══ PANEL: Add / Edit Listing ══ -->
+      <div class="dash-panel" id="panel-add">
+        <div class="dash-panel-header">
+          <div>
+            <h2 id="add-form-heading">➕ Add New Listing</h2>
+            <p>Fill in your property details. All fields marked * are required.</p>
+          </div>
+        </div>
+
+        <form id="add-listing-form" novalidate>
+
+          <!-- 1. Basic Info -->
+          <div class="form-section">
+            <h3>🏠 1. Basic Property Information</h3>
+            <div class="form-group">
+              <label>Property Title<span class="required">*</span></label>
+              <input type="text" class="form-control" id="listing-title" placeholder="e.g. Spacious 2BHK near Metro, Furnished PG with Food…" maxlength="100"/>
+              <div class="form-hint">Be specific — a good title gets 3× more inquiries.</div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Property Type<span class="required">*</span></label>
+                <select class="form-control" id="listing-type">
+                  <option value="">Select type…</option>
+                  <option value="living">🏠 Living Apartment (1BHK / 2BHK / Studio)</option>
+                  <option value="pg">🍽️ Paying Guest — with Food</option>
+                  <option value="room">🛏️ Single Room (Bare / Furnished)</option>
+                  <option value="shop">🏪 Commercial Shop / Office</option>
+                  <option value="garage">🚗 Garage / Car Parking / Bike Parking</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>City<span class="required">*</span></label>
+                <input type="text" class="form-control" id="listing-city" placeholder="e.g. Bangalore, Delhi…"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Full Address<span class="required">*</span></label>
+              <input type="text" class="form-control" id="listing-address" placeholder="Street, Area, Landmark…"/>
+            </div>
+            <div class="form-group">
+              <label>Description<span class="required">*</span></label>
+              <textarea class="form-control" id="listing-desc" rows="5" placeholder="Describe your property in detail: size, floor, nearby landmarks, rules, who it's suitable for…" maxlength="1000"></textarea>
+              <div class="form-hint"><span id="desc-count">0</span>/1000 characters</div>
+            </div>
+          </div>
+
+          <!-- 2. Room Details -->
+          <div class="form-section">
+            <h3>📋 2. Room Specifications</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Floor Number</label>
+                <input type="number" class="form-control" id="listing-floor" placeholder="e.g. 2" min="0" max="50"/>
+              </div>
+              <div class="form-group">
+                <label>Total Floors in Building</label>
+                <input type="number" class="form-control" id="listing-total-floors" placeholder="e.g. 5" min="1" max="100"/>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Area (sq ft)</label>
+                <input type="number" class="form-control" id="listing-area" placeholder="e.g. 450" min="1"/>
+              </div>
+              <div class="form-group">
+                <label>Max Occupants</label>
+                <input type="number" class="form-control" id="listing-occupants" placeholder="e.g. 2" min="1" max="20"/>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Furnishing</label>
+                <select class="form-control" id="listing-furnish">
+                  <option value="">Select…</option>
+                  <option value="fully-furnished">Fully Furnished</option>
+                  <option value="semi-furnished">Semi Furnished</option>
+                  <option value="unfurnished">Unfurnished</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Preferred Tenants</label>
+                <select class="form-control" id="listing-tenants">
+                  <option value="any">Any</option>
+                  <option value="gents">Gents Only</option>
+                  <option value="ladies">Ladies Only</option>
+                  <option value="family">Family</option>
+                  <option value="professionals">Working Professionals</option>
+                  <option value="students">Students</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Pricing -->
+          <div class="form-section">
+            <h3>💰 3. Pricing <span style="font-size:0.8rem;color:var(--gray-dk);font-family:var(--font-sans);font-weight:400;">(enter at least one)</span></h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Price Per Day (₹)</label>
+                <input type="number" class="form-control" id="listing-price-daily" placeholder="e.g. 800" min="0"/>
+              </div>
+              <div class="form-group">
+                <label>Price Per Week (₹)</label>
+                <input type="number" class="form-control" id="listing-price-weekly" placeholder="e.g. 4500" min="0"/>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Price Per Month (₹)</label>
+                <input type="number" class="form-control" id="listing-price-monthly" placeholder="e.g. 15000" min="0"/>
+              </div>
+              <div class="form-group">
+                <label>Security Deposit (₹)</label>
+                <input type="number" class="form-control" id="listing-deposit" placeholder="e.g. 30000" min="0"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Bills Included?</label>
+              <select class="form-control" id="listing-bills">
+                <option value="excluded">Not included (tenant pays separately)</option>
+                <option value="electricity">Electricity included</option>
+                <option value="all">All bills included (water, electricity, internet)</option>
+                <option value="negotiable">Negotiable</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 4. Amenities -->
+          <div class="form-section">
+            <h3>✨ 4. Amenities & Features</h3>
+            <div class="amenities-grid">
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="WiFi"> 📶 WiFi</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="AC"> ❄️ Air Conditioning</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Geyser"> 🚿 Geyser</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Parking"> 🚗 Parking</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Lift"> 🛗 Lift / Elevator</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="CCTV"> 📷 CCTV Security</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Power Backup"> ⚡ Power Backup</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Laundry"> 👕 Laundry</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Food (2 Meals)"> 🍽️ Food (2 Meals/Day)</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Furnished"> 🛋️ Furnished</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Attached Bath"> 🛁 Attached Bathroom</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="RO Water"> 💧 RO Water</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Gym"> 💪 Gym Access</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Pool"> 🏊 Swimming Pool</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Modular Kitchen"> 🍳 Modular Kitchen</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Metro Nearby"> 🚇 Metro Nearby</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="24/7 Access"> 🔓 24/7 Access</label>
+              <label class="amenity-check"><input type="checkbox" class="amenity-check-input" value="Pet Friendly"> 🐾 Pet Friendly</label>
+            </div>
+          </div>
+
+          <!-- 5. Photos -->
+          <div class="form-section">
+            <h3>📸 5. Property Photos</h3>
+            <p style="font-size:0.85rem;color:var(--gray-dk);margin-bottom:16px;">Upload up to 10 high-quality photos. First photo will be the cover image.</p>
+            <div class="file-upload-area" id="photo-area">
+              <div class="upload-icon">📷</div>
+              <p><strong>Click to upload</strong> or drag & drop photos here</p>
+              <p style="font-size:0.78rem;margin-top:4px;">JPG, PNG, WebP — Max 5MB each</p>
+              <input type="file" id="photo-input" multiple accept="image/*"/>
+            </div>
+            <div class="photo-preview-grid" id="photo-preview-grid"></div>
+          </div>
+
+          <!-- 6. Video Tour -->
+          <div class="form-section">
+            <h3>🎥 6. Video Tour <span style="font-size:0.82rem;color:var(--gray-dk);font-family:var(--font-sans);font-weight:400;">(optional but recommended)</span></h3>
+            <p style="font-size:0.85rem;color:var(--gray-dk);margin-bottom:16px;">A short 1-2 minute walkthrough video dramatically increases inquiries.</p>
+            <div class="file-upload-area" id="video-area">
+              <div class="upload-icon">🎬</div>
+              <p><strong>Click to upload video</strong></p>
+              <p style="font-size:0.78rem;margin-top:4px;">MP4, WebM — Max 100MB</p>
+              <input type="file" id="video-input" accept="video/*"/>
+            </div>
+            <div id="video-preview"></div>
+          </div>
+
+          <!-- 7. Location Map -->
+          <div class="form-section">
+            <h3>📍 7. Property Location on Map</h3>
+            <p style="font-size:0.85rem;color:var(--gray-dk);margin-bottom:12px;">Click precisely on the map to pin your property. Renters will see this map on the listing page.</p>
+
+            <!-- City search for map -->
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+              <input type="text" id="map-city-search" class="form-control" placeholder="🔍 Search city to navigate map…" style="flex:1;"/>
+              <button type="button" class="btn btn-outline" id="map-city-btn">Go</button>
+            </div>
+            <button type="button" class="btn btn-outline btn-sm" style="margin-bottom:12px;" onclick="useMyLocation()">
+              📡 Use My Current Location
+            </button>
+
+            <div id="owner-map"></div>
+            <div class="map-coords" id="map-coords-display">📍 Click on the map to set exact location</div>
+          </div>
+
+          <!-- 8. Availability -->
+          <div class="form-section">
+            <h3>🔑 8. Availability</h3>
+            <div class="toggle-switch" style="margin-bottom:16px;">
+              <input type="checkbox" id="availability-toggle" checked/>
+              <label class="toggle-label" for="availability-toggle"></label>
+              <span class="toggle-text" id="avail-text">Available Now</span>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Available From</label>
+                <input type="date" class="form-control" id="listing-avail-from"/>
+              </div>
+              <div class="form-group">
+                <label>Minimum Booking Duration</label>
+                <select class="form-control" id="listing-min-duration">
+                  <option value="daily">1 Day</option>
+                  <option value="weekly">1 Week</option>
+                  <option value="monthly" selected>1 Month</option>
+                  <option value="quarterly">3 Months</option>
+                  <option value="yearly">1 Year</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <div style="display:flex;gap:12px;flex-wrap:wrap;">
+            <button type="submit" class="btn btn-primary btn-lg">🚀 Submit Listing for Approval</button>
+            <button type="button" class="btn btn-outline btn-lg" onclick="showPanel('listings')">Cancel</button>
+          </div>
+          <p style="font-size:0.8rem;color:var(--gray-dk);margin-top:12px;">
+            ℹ️ Listings are reviewed by our admin team and typically approved within 24 hours.
+          </p>
+        </form>
+      </div>
+
+      <!-- ══ PANEL: Inquiries ══ -->
+      <div class="dash-panel" id="panel-inquiries">
+        <div class="dash-panel-header">
+          <div><h2>💬 Inquiries</h2><p>Messages from renters about your properties</p></div>
+        </div>
+        <div id="inquiries-container">
+          <div class="empty-state"><span class="empty-icon">⏳</span><h3>Loading…</h3></div>
+        </div>
+      </div>
+
+      <!-- ══ PANEL: Bookings ══ -->
+      <div class="dash-panel" id="panel-bookings">
+        <div class="dash-panel-header">
+          <div><h2>📅 Booking Requests</h2><p>Approve or reject booking requests from renters</p></div>
+        </div>
+        <div id="owner-bookings-container">
+          <div class="empty-state"><span class="empty-icon">⏳</span><h3>Loading…</h3></div>
+        </div>
+      </div>
+
+      <!-- ══ PANEL: Profile ══ -->
+      <div class="dash-panel" id="panel-profile">
+        <div class="dash-panel-header"><div><h2>👤 My Profile</h2><p>Your account information</p></div></div>
+        <div class="form-section" id="profile-card">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- CONVERSATION MODAL -->
+<div class="modal-overlay" id="conv-modal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h3 id="conv-modal-title">Conversation</h3>
+      <button class="modal-close" onclick="closeModal('conv-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="message-thread" id="conv-thread" style="max-height:320px;overflow-y:auto;margin-bottom:16px;"></div>
+      <div style="display:flex;gap:10px;align-items:flex-end;">
+        <textarea class="form-control" id="conv-input" rows="2" placeholder="Type your reply…" style="flex:1;"></textarea>
+        <button class="btn btn-primary" id="conv-send">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/app.js"></script>
+<script src="js/map.js"></script>
+<script src="js/owner.js"></script>
+<script>
+  // Amenity checkbox toggle visual
+  document.querySelectorAll('.amenity-check-input').forEach(cb => {
+    cb.addEventListener('change', () => cb.closest('.amenity-check').classList.toggle('checked', cb.checked));
+  });
+
+  // Desc character count
+  document.getElementById('listing-desc')?.addEventListener('input', function() {
+    document.getElementById('desc-count').textContent = this.value.length;
+  });
+
+  // Use my location button
+  function useMyLocation() {
+    if (!navigator.geolocation) { showToast('Geolocation not supported.','error'); return; }
+    showToast('Getting your location…','info',2000);
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        pickedLat = pos.coords.latitude;
+        pickedLng = pos.coords.longitude;
+        if (pickerMap) {
+          pickerMap.setView([pickedLat, pickedLng], 16);
+          // Fire click to place marker
+          pickerMap.fire('click', { latlng: { lat: pickedLat, lng: pickedLng } });
+        }
+        showToast('Location set!','success');
+      },
+      () => showToast('Could not get location.','error')
+    );
+  }
+
+  // Profile panel
+  document.querySelector('.dash-nav-item[data-panel="profile"]')?.addEventListener('click', () => {
+    const session = Auth.getSession();
+    const dbKey   = DB.OWNERS;
+    const owner   = getDB(dbKey).find(o => o.id === session.id) || session;
+    const card    = document.getElementById('profile-card');
+    if (!card) return;
+    card.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:0.9rem;">
+        <div><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">Full Name</label><div style="font-weight:600;margin-top:4px;">${sanitize(owner.name)}</div></div>
+        <div><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">Email</label><div style="font-weight:600;margin-top:4px;">${sanitize(owner.email)}</div></div>
+        <div><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">Phone</label><div style="font-weight:600;margin-top:4px;">${sanitize(owner.phone||'—')}</div></div>
+        <div><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">City</label><div style="font-weight:600;margin-top:4px;">${sanitize(owner.city||'—')}</div></div>
+        <div style="grid-column:1/-1;"><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">Member Since</label><div style="font-weight:600;margin-top:4px;">${fmt(owner.createdAt)}</div></div>
+        ${owner.lat ? `<div style="grid-column:1/-1;"><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">Saved Location</label><div style="font-weight:600;margin-top:4px;">📍 ${sanitize(owner.address||owner.lat+', '+owner.lng)}</div></div>` : ''}
+      </div>
+      <div style="margin-top:20px;">
+        <span class="badge ${owner.verified?'badge-available':'badge-pending'}">${owner.verified?'✓ Verified Owner':'Pending Verification'}</span>
+        <span class="badge badge-available" style="margin-left:8px;">${sanitize(owner.status||'active')}</span>
+      </div>`;
+  });
+</script>
+</body>
+</html>
+

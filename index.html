@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>2nd Home — Find Your Perfect Space</title>
+  <meta name="description" content="Rent shops, apartments, PG with food, single rooms, and garages across India."/>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+</head>
+<body>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <span class="logo-icon">🏛️</span>
+      2nd Home
+      <span>INDIA</span>
+    </a>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="listings.html">Browse</a></li>
+      <li><a href="owner-dashboard.html">List Property</a></li>
+      <li><a href="auth.html">Login</a></li>
+      <li id="nav-auth"><a href="auth.html" class="btn-nav-cta">Get Started</a></li>
+    </ul>
+    <div class="nav-hamburger" id="hamburger">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-pattern"></div>
+  <div class="hero-content">
+    <div class="hero-badge">✦ India's Classic Rental Marketplace ✦</div>
+    <h1>Find Your Perfect <em>Space</em> to Call Home</h1>
+    <p>From cozy single rooms to prime commercial shops — discover verified rentals tailored to your lifestyle and budget.</p>
+
+    <!-- Search Bar -->
+    <div class="hero-search">
+      <select id="hero-type" aria-label="Property Type">
+        <option value="">🏠 All Types</option>
+        <option value="living">🏠 Living Apartment</option>
+        <option value="pg">🍽️ Paying Guest (w/ Food)</option>
+        <option value="room">🛏️ Single Room</option>
+        <option value="shop">🏪 Commercial Shop</option>
+        <option value="garage">🚗 Garage / Parking</option>
+      </select>
+      <div class="divider-v"></div>
+      <input type="text" id="hero-city" placeholder="📍 City or Area" aria-label="City"/>
+      <div class="divider-v"></div>
+      <select id="hero-duration" aria-label="Duration">
+        <option value="">📅 Any Duration</option>
+        <option value="daily">Per Day</option>
+        <option value="weekly">Per Week</option>
+        <option value="monthly">Per Month</option>
+      </select>
+      <button class="btn-search" onclick="heroSearch()">Search Spaces</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="hero-stats">
+      <div class="stat"><span class="stat-num" id="stat-listings">—</span><span class="stat-label">Properties</span></div>
+      <div class="stat"><span class="stat-num" id="stat-cities">5+</span><span class="stat-label">Cities</span></div>
+      <div class="stat"><span class="stat-num" id="stat-owners">—</span><span class="stat-label">Owners</span></div>
+      <div class="stat"><span class="stat-num">100%</span><span class="stat-label">Verified</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CATEGORIES ═══ -->
+<section class="section categories">
+  <div class="container">
+    <div class="section-heading">
+      <h2>What Are You Looking For?</h2>
+      <p>Choose from a variety of property types suited to every need and budget.</p>
+      <div class="gold-line"></div>
+    </div>
+    <div class="category-grid">
+      <div class="category-card" onclick="browseCategory('living')">
+        <span class="category-icon">🏠</span>
+        <h3>Living Apartment</h3>
+        <p>1BHK, 2BHK & studio</p>
+      </div>
+      <div class="category-card" onclick="browseCategory('pg')">
+        <span class="category-icon">🍽️</span>
+        <h3>Paying Guest</h3>
+        <p>With home-cooked meals</p>
+      </div>
+      <div class="category-card" onclick="browseCategory('room')">
+        <span class="category-icon">🛏️</span>
+        <h3>Single Room</h3>
+        <p>Affordable & furnished</p>
+      </div>
+      <div class="category-card" onclick="browseCategory('shop')">
+        <span class="category-icon">🏪</span>
+        <h3>Commercial Shop</h3>
+        <p>Retail & office spaces</p>
+      </div>
+      <div class="category-card" onclick="browseCategory('garage')">
+        <span class="category-icon">🚗</span>
+        <h3>Garage / Parking</h3>
+        <p>Cars, bikes & storage</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FEATURED LISTINGS ═══ -->
+<section class="section" style="background:var(--ivory);">
+  <div class="container">
+    <div class="section-heading">
+      <h2>Featured Properties</h2>
+      <p>Handpicked top listings from verified owners across India.</p>
+      <div class="gold-line"></div>
+    </div>
+    <div class="listings-grid" id="featured-grid">
+      <!-- Injected by JS -->
+    </div>
+    <div style="text-align:center;margin-top:40px;">
+      <a href="listings.html" class="btn btn-outline btn-lg">View All Properties →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<section class="section how-it-works">
+  <div class="container">
+    <div class="section-heading">
+      <h2>How 2nd Home Works</h2>
+      <p>Simple steps to find and book your ideal rental space.</p>
+      <div class="gold-line"></div>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <h3>Search & Filter</h3>
+        <p>Use our powerful search to filter by property type, city, price, and duration of stay.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <h3>View & Explore</h3>
+        <p>Browse photos, watch videos, check amenities, and see the exact location on the map.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <h3>Contact Owner</h3>
+        <p>Message the owner directly through our platform to ask questions or negotiate terms.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <h3>Book & Move In</h3>
+        <p>Send a booking request with your preferred dates and duration, and wait for confirmation.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOR OWNERS ═══ -->
+<section class="section" style="background:var(--ivory-dk);">
+  <div class="container" style="display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;">
+    <div>
+      <div class="hero-badge" style="color:var(--burgundy);border-color:var(--burgundy);background:rgba(92,10,20,0.06);">✦ For Property Owners ✦</div>
+      <h2 style="font-size:2.2rem;margin:16px 0 12px;">List Your Property,<br>Earn Every Month</h2>
+      <p style="margin-bottom:24px;font-size:1.05rem;">Join hundreds of owners already earning passive income by renting out their spaces on 2nd Home. Upload photos, a video tour, and get exact location on map.</p>
+      <ul style="list-style:none;margin-bottom:32px;display:flex;flex-direction:column;gap:12px;">
+        <li style="display:flex;align-items:center;gap:12px;font-size:0.95rem;"><span style="color:var(--gold);font-size:1.2rem;">✓</span> Free listing creation with photos & video</li>
+        <li style="display:flex;align-items:center;gap:12px;font-size:0.95rem;"><span style="color:var(--gold);font-size:1.2rem;">✓</span> Get an interactive map pin for your property</li>
+        <li style="display:flex;align-items:center;gap:12px;font-size:0.95rem;"><span style="color:var(--gold);font-size:1.2rem;">✓</span> Receive direct messages from interested renters</li>
+        <li style="display:flex;align-items:center;gap:12px;font-size:0.95rem;"><span style="color:var(--gold);font-size:1.2rem;">✓</span> Manage bookings from your owner dashboard</li>
+      </ul>
+      <a href="auth.html?role=owner" class="btn btn-primary btn-lg">Start Listing Free →</a>
+    </div>
+    <div style="text-align:center;font-size:8rem;line-height:1;">🏡</div>
+  </div>
+</section>
+
+<!-- ═══ TESTIMONIALS ═══ -->
+<section class="section testimonials">
+  <div class="container">
+    <div class="section-heading">
+      <h2>What Our Users Say</h2>
+      <p>Thousands of happy renters and owners trust 2nd Home.</p>
+      <div class="gold-line"></div>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-quote">"Found my PG in Pune within 2 days of searching. The owner was very responsive and the food quality is excellent. 2nd Home made the whole process seamless!"</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">A</div>
+          <div class="author-info"><div class="name">Amit Singh</div><div class="role">Renter · Pune</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-quote">"Listed my two apartments on 2nd Home and got inquiries the very next day. The dashboard is clean and I can manage everything from one place. Highly recommended!"</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">R</div>
+          <div class="author-info"><div class="name">Rajesh Sharma</div><div class="role">Owner · Bangalore</div></div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="stars">★★★★☆</div>
+        <p class="testimonial-quote">"Rented a garage space for my SUV near Powai at a very reasonable price. The location map feature was super helpful — I could check proximity to my office before contacting."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">N</div>
+          <div class="author-info"><div class="name">Neha Verma</div><div class="role">Renter · Mumbai</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <span class="logo">🏛️ 2nd Home</span>
+        <p>India's classic rental marketplace connecting quality property owners with verified renters across the country.</p>
+      </div>
+      <div class="footer-col">
+        <h4>For Renters</h4>
+        <ul>
+          <li><a href="listings.html">Browse Listings</a></li>
+          <li><a href="listings.html?type=pg">PG Accommodation</a></li>
+          <li><a href="listings.html?type=room">Single Rooms</a></li>
+          <li><a href="listings.html?type=shop">Commercial Shops</a></li>
+          <li><a href="listings.html?type=garage">Garages</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>For Owners</h4>
+        <ul>
+          <li><a href="owner-dashboard.html">Owner Dashboard</a></li>
+          <li><a href="auth.html?role=owner">Register as Owner</a></li>
+          <li><a href="owner-dashboard.html#add">Add a Listing</a></li>
+          <li><a href="owner-dashboard.html#inquiries">View Inquiries</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Contact Support</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="admin.html">Admin Portal</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 2nd Home India. All rights reserved.</p>
+      <div class="footer-social">
+        <a href="#" title="Facebook">f</a>
+        <a href="#" title="Twitter">𝕏</a>
+        <a href="#" title="Instagram">📷</a>
+        <a href="#" title="WhatsApp">W</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<button class="scroll-top" title="Back to top">↑</button>
+<div class="toast-container"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Load featured listings
+  document.addEventListener('DOMContentLoaded', () => {
+    const approved = Listings.getApproved();
+    const featured = approved.filter(l => l.featured).slice(0, 3);
+    const toShow   = featured.length >= 3 ? featured : approved.slice(0, 3);
+
+    const grid = document.getElementById('featured-grid');
+    if (toShow.length === 0) {
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🏠</span><h3>No listings yet</h3></div>`;
+    } else {
+      grid.innerHTML = toShow.map(l => renderListingCard(l)).join('');
+    }
+
+    // Stats
+    document.getElementById('stat-listings').textContent = approved.length + '+';
+    document.getElementById('stat-owners').textContent   = getDB(DB.OWNERS).length + '+';
+  });
+
+  function heroSearch() {
+    const type     = document.getElementById('hero-type').value;
+    const city     = document.getElementById('hero-city').value.trim();
+    const duration = document.getElementById('hero-duration').value;
+    const params   = new URLSearchParams();
+    if (type)     params.set('type', type);
+    if (city)     params.set('city', city);
+    if (duration) params.set('duration', duration);
+    window.location.href = 'listings.html?' + params.toString();
+  }
+
+  function browseCategory(type) {
+    window.location.href = `listings.html?type=${type}`;
+  }
+
+  // Enter key on hero search
+  document.getElementById('hero-city').addEventListener('keydown', e => {
+    if (e.key === 'Enter') heroSearch();
+  });
+</script>
+</body>
+</html>
+

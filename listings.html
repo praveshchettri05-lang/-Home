@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Browse Properties — 2nd Home</title>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <style>
+    @media (max-width: 960px) {
+      .filter-sidebar {
+        position: fixed !important;
+        top: 72px; left: 0; bottom: 0;
+        width: 290px;
+        z-index: 500;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        overflow-y: auto;
+        border-radius: 0;
+      }
+      .filter-sidebar.open { transform: translateX(0); box-shadow: 4px 0 24px rgba(0,0,0,0.2); }
+      .filter-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 499; }
+      .filter-backdrop.show { display: block; }
+    }
+    .nearby-banner {
+      background: linear-gradient(135deg, rgba(92,10,20,0.06), rgba(201,168,76,0.08));
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.88rem;
+      color: var(--walnut);
+    }
+    .nearby-banner .nb-icon { font-size: 1.3rem; }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><span class="logo-icon">🏛️</span>2nd Home<span>INDIA</span></a>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="listings.html" class="active">Browse</a></li>
+      <li><a href="owner-dashboard.html">List Property</a></li>
+      <li id="nav-auth"><a href="auth.html" class="btn-nav-cta">Get Started</a></li>
+    </ul>
+    <div class="nav-hamburger" id="hamburger"><span></span><span></span><span></span></div>
+  </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="container">
+    <h1>Browse Properties</h1>
+    <p>Find rooms, PGs, shops & garages across India</p>
+    <div class="breadcrumb">
+      <a href="index.html">Home</a><span>/</span><span>Browse</span>
+    </div>
+  </div>
+</div>
+
+<section class="section" style="padding-top:40px;">
+  <div class="container">
+
+    <!-- Mobile filter toggle -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div class="results-count" id="results-count" style="font-size:0.9rem;color:var(--gray-dk);">Loading…</div>
+      <button id="filter-toggle" class="btn btn-outline btn-sm" style="display:none;">⚙️ Filters</button>
+    </div>
+
+    <!-- Nearby banner (shown if user has location) -->
+    <div class="nearby-banner" id="nearby-banner" style="display:none;">
+      <span class="nb-icon">📍</span>
+      <div>
+        <strong>Showing results near you</strong> — listings sorted by proximity to your location.
+        <a href="#" onclick="clearNearby(event)" style="color:var(--burgundy);margin-left:8px;font-size:0.82rem;">Show all</a>
+      </div>
+    </div>
+
+    <div class="listings-layout">
+      <!-- FILTER SIDEBAR -->
+      <aside class="filter-sidebar">
+        <h3>
+          Filters
+          <button class="btn btn-sm btn-outline" onclick="clearFilters()" style="font-size:0.75rem;padding:4px 10px;">Clear All</button>
+        </h3>
+
+        <!-- Property Type -->
+        <div class="filter-group">
+          <label>Property Type</label>
+          <div class="filter-options">
+            <label class="filter-option"><input type="checkbox" class="filter-type-check" value="all" checked> All Types</label>
+            <label class="filter-option"><input type="checkbox" class="filter-type-check" value="living"> 🏠 Living Apartment</label>
+            <label class="filter-option"><input type="checkbox" class="filter-type-check" value="pg"> 🍽️ Paying Guest (PG)</label>
+            <label class="filter-option"><input type="checkbox" class="filter-type-check" value="room"> 🛏️ Single Room</label>
+            <label class="filter-option"><input type="checkbox" class="filter-type-check" value="shop"> 🏪 Commercial Shop</label>
+            <label class="filter-option"><input type="checkbox" class="filter-type-check" value="garage"> 🚗 Garage / Parking</label>
+          </div>
+        </div>
+
+        <!-- City -->
+        <div class="filter-group">
+          <label>City / Area</label>
+          <input type="text" id="filter-city" class="form-control" placeholder="e.g. Bangalore, Delhi…" style="font-size:0.88rem;"/>
+        </div>
+
+        <!-- Price Range -->
+        <div class="filter-group">
+          <label>Max Price / Month</label>
+          <input type="range" class="range-slider" id="filter-price" min="0" max="100000" value="100000" step="1000"/>
+          <div class="price-range-display">
+            <span>₹0</span>
+            <span id="price-display">Any</span>
+          </div>
+        </div>
+
+        <!-- Duration -->
+        <div class="filter-group">
+          <label>Available For</label>
+          <select id="filter-duration" class="form-control" style="font-size:0.88rem;">
+            <option value="">Any Duration</option>
+            <option value="daily">Per Day</option>
+            <option value="weekly">Per Week</option>
+            <option value="monthly">Per Month</option>
+          </select>
+        </div>
+
+        <!-- Keyword -->
+        <div class="filter-group">
+          <label>Keyword Search</label>
+          <input type="text" id="filter-keyword" class="form-control" placeholder="e.g. furnished, AC…" style="font-size:0.88rem;"/>
+        </div>
+
+        <button class="btn btn-primary btn-block" onclick="applyFilters()">Apply Filters</button>
+      </aside>
+
+      <!-- LISTINGS AREA -->
+      <div>
+        <!-- Toolbar -->
+        <div class="listings-toolbar">
+          <div></div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <span style="font-size:0.82rem;color:var(--gray-dk);">Sort:</span>
+            <select class="sort-select" id="sort-select">
+              <option value="newest">Newest First</option>
+              <option value="price-asc">Price: Low → High</option>
+              <option value="price-desc">Price: High → Low</option>
+              <option value="views">Most Viewed</option>
+              <option value="nearby">Nearest to Me</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Grid -->
+        <div class="listings-grid" id="listings-grid">
+          <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--gray-mid);">
+            ⏳ Loading listings…
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="filter-backdrop" id="filter-backdrop"></div>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-bottom">
+      <p>© 2026 2nd Home India. All rights reserved.</p>
+      <a href="index.html" style="color:var(--gold);">← Back to Home</a>
+    </div>
+  </div>
+</footer>
+
+<button class="scroll-top" title="Back to top">↑</button>
+<div class="toast-container"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/app.js"></script>
+<script src="js/listings.js"></script>
+<script>
+  // Mobile filter toggle
+  document.addEventListener('DOMContentLoaded', () => {
+    const toggle   = document.getElementById('filter-toggle');
+    const sidebar  = document.querySelector('.filter-sidebar');
+    const backdrop = document.getElementById('filter-backdrop');
+
+    // Show filter toggle on mobile
+    if (window.innerWidth <= 960) toggle.style.display = 'flex';
+    window.addEventListener('resize', () => { toggle.style.display = window.innerWidth <= 960 ? 'flex' : 'none'; });
+
+    toggle.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      backdrop.classList.toggle('show');
+    });
+    backdrop.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('show');
+    });
+
+    // Type checkbox mutual exclusivity (All vs specific)
+    document.querySelectorAll('.filter-type-check').forEach(cb => {
+      cb.addEventListener('change', () => {
+        if (cb.value === 'all' && cb.checked) {
+          document.querySelectorAll('.filter-type-check:not([value="all"])').forEach(c => c.checked=false);
+        } else if (cb.value !== 'all' && cb.checked) {
+          document.querySelector('.filter-type-check[value="all"]').checked = false;
+        }
+        applyFilters();
+      });
+    });
+
+    // Keyword on enter
+    document.getElementById('filter-keyword').addEventListener('keydown', e => { if(e.key==='Enter') applyFilters(); });
+    document.getElementById('filter-city').addEventListener('keydown',    e => { if(e.key==='Enter') applyFilters(); });
+
+    // Check for user location for nearby sort
+    const session = Auth.getSession();
+    if (session) {
+      const dbKey = session.role === 'owner' ? DB.OWNERS : DB.USERS;
+      const user  = getDB(dbKey).find(u => u.id === session.id);
+      if (user?.lat && user?.lng) {
+        window._userLat = user.lat;
+        window._userLng = user.lng;
+        document.getElementById('nearby-banner').style.display = 'flex';
+      }
+    }
+  });
+
+  function clearNearby(e) {
+    e.preventDefault();
+    document.getElementById('nearby-banner').style.display = 'none';
+    window._userLat = null; window._userLng = null;
+    applyFilters();
+  }
+
+  // Override applyFilters to include "nearby" sort and keyword
+  const _origApply = applyFilters;
+  // Augmented in listings.js to handle keyword + nearby sort
+</script>
+</body>
+</html>
+

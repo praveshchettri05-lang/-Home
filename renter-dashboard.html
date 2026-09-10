@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Dashboard — 2nd Home</title>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="css/dashboard.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    .nearby-map-wrap { height: 300px; border-radius: 12px; border: 1px solid var(--ivory-dk); margin-bottom: 20px; }
+    .search-card {
+      background: linear-gradient(135deg, var(--burgundy-dk), var(--burgundy));
+      border-radius: 16px;
+      padding: 28px;
+      margin-bottom: 28px;
+      border: 1px solid var(--gold);
+    }
+    .search-card h3 { color: var(--gold); font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 16px; }
+    .search-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+    .search-grid select, .search-grid input { background: rgba(255,255,255,0.1); border: 1px solid rgba(201,168,76,0.3); color: white; border-radius: 8px; padding: 10px 14px; font-family: var(--font-sans); font-size: 0.9rem; outline: none; }
+    .search-grid select option { background: var(--burgundy-dk); }
+    .search-grid select::placeholder, .search-grid input::placeholder { color: rgba(255,255,255,0.5); }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar" style="position:relative;top:0;transform:none;box-shadow:none;">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><span class="logo-icon">🏛️</span>2nd Home<span>INDIA</span></a>
+    <ul class="nav-links">
+      <li><a href="listings.html">Browse All</a></li>
+      <li><a href="index.html">Home</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="dashboard-page">
+  <div class="dashboard-layout">
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <aside class="dash-sidebar">
+      <div class="dash-profile">
+        <div class="dash-avatar" id="renter-initial">R</div>
+        <div class="dash-name" id="renter-name">Renter</div>
+        <div class="dash-role">Room Seeker</div>
+        <div id="renter-email" style="color:rgba(255,255,255,0.35);font-size:0.75rem;margin-top:4px;"></div>
+      </div>
+
+      <div class="dash-nav-section">Discover</div>
+      <div class="dash-nav-item active" data-panel="search"><span class="nav-icon">🔍</span> Search Rooms</div>
+      <div class="dash-nav-item" data-panel="nearby"><span class="nav-icon">📍</span> Nearby Rooms</div>
+      <div class="dash-nav-item" data-panel="favorites"><span class="nav-icon">♥</span> Favourites</div>
+
+      <div class="dash-nav-section">My Activity</div>
+      <div class="dash-nav-item" data-panel="bookings"><span class="nav-icon">📅</span> My Bookings</div>
+      <div class="dash-nav-item" data-panel="messages"><span class="nav-icon">💬</span> Messages</div>
+
+      <div class="dash-nav-section">Account</div>
+      <div class="dash-nav-item" data-panel="profile"><span class="nav-icon">👤</span> My Profile</div>
+      <div class="dash-logout" id="logout-btn"><span>🚪</span> Logout</div>
+    </aside>
+
+    <!-- ═══ MAIN ═══ -->
+    <main class="dash-main">
+
+      <!-- ══ PANEL: Search ══ -->
+      <div class="dash-panel active" id="panel-search">
+        <div class="stat-cards-grid">
+          <div class="stat-card">
+            <div class="stat-icon">📅</div>
+            <span class="stat-val" id="stat-bookings">0</span>
+            <span class="stat-lbl">Bookings</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">♥</div>
+            <span class="stat-val" id="stat-favs">0</span>
+            <span class="stat-lbl">Favourites</span>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">💬</div>
+            <span class="stat-val" id="stat-msgs">0</span>
+            <span class="stat-lbl">Conversations</span>
+          </div>
+        </div>
+
+        <!-- Search Card -->
+        <div class="search-card">
+          <h3>🔍 Find Your Perfect Space</h3>
+          <form id="renter-search-form">
+            <div class="search-grid">
+              <select id="s-type">
+                <option value="">All Types</option>
+                <option value="living">🏠 Apartment</option>
+                <option value="pg">🍽️ PG with Food</option>
+                <option value="room">🛏️ Single Room</option>
+                <option value="shop">🏪 Shop</option>
+                <option value="garage">🚗 Garage</option>
+              </select>
+              <input type="text" id="s-city" placeholder="📍 City or Area"/>
+              <select id="s-duration">
+                <option value="">Any Duration</option>
+                <option value="daily">Per Day</option>
+                <option value="weekly">Per Week</option>
+                <option value="monthly">Per Month</option>
+              </select>
+              <input type="number" id="s-price" placeholder="₹ Max Price/mo" min="0"/>
+              <input type="text" id="s-keyword" placeholder="🔎 Keyword (AC, furnished…)"/>
+              <button type="submit" class="btn btn-primary" style="min-height:44px;">Search →</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="listings-grid" id="search-results-grid">
+          <!-- Pre-load featured -->
+        </div>
+      </div>
+
+      <!-- ══ PANEL: Nearby Rooms ══ -->
+      <div class="dash-panel" id="panel-nearby">
+        <div class="dash-panel-header">
+          <div><h2>📍 Rooms Near You</h2><p>Properties closest to your saved location</p></div>
+          <button class="btn btn-outline btn-sm" onclick="updateMyLocation()">📡 Update My Location</button>
+        </div>
+        <div id="nearby-location-info" style="background:var(--ivory-dk);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:0.87rem;"></div>
+        <div id="nearby-map-container" class="nearby-map-wrap"></div>
+        <div class="listings-grid" id="nearby-grid"></div>
+      </div>
+
+      <!-- ══ PANEL: Favourites ══ -->
+      <div class="dash-panel" id="panel-favorites">
+        <div class="dash-panel-header"><div><h2>♥ My Favourites</h2><p>Properties you've saved</p></div></div>
+        <div id="favorites-container"></div>
+      </div>
+
+      <!-- ══ PANEL: Bookings ══ -->
+      <div class="dash-panel" id="panel-bookings">
+        <div class="dash-panel-header"><div><h2>📅 My Bookings</h2><p>Track your booking requests</p></div></div>
+        <div id="renter-bookings-container"></div>
+      </div>
+
+      <!-- ══ PANEL: Messages ══ -->
+      <div class="dash-panel" id="panel-messages">
+        <div class="dash-panel-header"><div><h2>💬 My Messages</h2><p>Conversations with property owners</p></div></div>
+        <div id="renter-messages-container"></div>
+      </div>
+
+      <!-- ══ PANEL: Profile ══ -->
+      <div class="dash-panel" id="panel-profile">
+        <div class="dash-panel-header"><div><h2>👤 My Profile</h2><p>Your account information</p></div></div>
+        <div class="form-section" id="renter-profile-card"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- MESSAGE MODAL -->
+<div class="modal-overlay" id="conv-modal">
+  <div class="modal" style="max-width:600px;">
+    <div class="modal-header">
+      <h3 id="conv-modal-title">Conversation</h3>
+      <button class="modal-close" onclick="closeModal('conv-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="message-thread" id="conv-thread" style="max-height:320px;overflow-y:auto;margin-bottom:16px;"></div>
+      <div style="display:flex;gap:10px;align-items:flex-end;">
+        <textarea class="form-control" id="conv-input" rows="2" placeholder="Type your message…" style="flex:1;"></textarea>
+        <button class="btn btn-primary" id="conv-send">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/app.js"></script>
+<script src="js/map.js"></script>
+<script src="js/renter.js"></script>
+<script>
+  // Load initial featured listings in search panel
+  document.addEventListener('DOMContentLoaded', () => {
+    const session = Auth.getSession();
+    const grid = document.getElementById('search-results-grid');
+    if (grid) {
+      const featured = Listings.getApproved().filter(l=>l.featured).slice(0,6);
+      if (featured.length) {
+        grid.innerHTML = `<div style="grid-column:1/-1;margin-bottom:12px;font-size:0.85rem;color:var(--gray-dk);">✨ Featured Properties</div>` +
+          featured.map(l => renderListingCard(l, session?.id)).join('');
+      }
+    }
+  });
+
+  // Nearby panel
+  document.querySelector('.dash-nav-item[data-panel="nearby"]')?.addEventListener('click', () => {
+    setTimeout(renderNearbyPanel, 100);
+  });
+
+  function renderNearbyPanel() {
+    const session = Auth.getSession();
+    const dbKey   = DB.USERS;
+    const user    = getDB(dbKey).find(u => u.id === session.id);
+
+    const infoEl  = document.getElementById('nearby-location-info');
+    const mapCont = document.getElementById('nearby-map-container');
+    const grid    = document.getElementById('nearby-grid');
+
+    if (!user?.lat || !user?.lng) {
+      if (infoEl) infoEl.innerHTML = `
+        <p style="color:var(--gray-dk);">📍 No location saved yet.
+        <button class="btn btn-outline btn-sm" style="margin-left:12px;" onclick="updateMyLocation()">Set Location</button></p>`;
+      if (grid) grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">📍</span><h3>Location not set</h3><p>Update your location to see rooms near you.</p></div>`;
+      return;
+    }
+
+    if (infoEl) infoEl.innerHTML = `📍 Showing rooms near: <strong>${sanitize(user.address ? user.address.split(',').slice(0,3).join(', ') : user.lat+', '+user.lng)}</strong>`;
+
+    // Render map
+    if (mapCont && !mapCont._renter_map_inited) {
+      mapCont._renter_map_inited = true;
+      waitForLeaflet(() => {
+        const map = L.map(mapCont);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom:19 }).addTo(map);
+        map.setView([user.lat, user.lng], 13);
+
+        // User marker
+        const youIcon = L.divIcon({
+          className: '',
+          html: `<div style="width:36px;height:36px;background:#1a73e8;border:3px solid white;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;color:white;font-size:0.9rem;">👤</div>`,
+          iconAnchor: [18,18]
+        });
+        L.marker([user.lat, user.lng], { icon: youIcon }).addTo(map).bindPopup('<strong>Your Location</strong>');
+
+        // Listing markers
+        const listings = Listings.getApproved().filter(l => l.lat && l.lng);
+        listings.forEach(l => {
+          const listIcon = L.divIcon({
+            className: '',
+            html: `<div style="width:30px;height:30px;background:#5c0a14;border:2px solid #c9a84c;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 2px 6px rgba(0,0,0,.3);"></div>`,
+            iconAnchor:[15,30]
+          });
+          const dist = calcDist(user.lat, user.lng, l.lat, l.lng);
+          L.marker([l.lat, l.lng], { icon: listIcon }).addTo(map)
+            .bindPopup(`<strong>${sanitize(l.title)}</strong><br>📍 ${sanitize(l.city)}<br>📏 ${dist.toFixed(1)} km away<br><a href="listing-detail.html?id=${l.id}" style="color:#5c0a14;font-weight:700;">View →</a>`);
+        });
+      });
+    }
+
+    // Nearby listings sorted by distance
+    const listings = Listings.getApproved().filter(l => l.lat && l.lng);
+    const sorted = listings.map(l => ({ ...l, dist: calcDist(user.lat, user.lng, l.lat, l.lng) }))
+      .sort((a,b) => a.dist - b.dist).slice(0,12);
+
+    if (grid) {
+      if (sorted.length === 0) {
+        grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1"><span class="empty-icon">🔍</span><h3>No nearby listings found</h3></div>`;
+      } else {
+        grid.innerHTML = sorted.map(l => {
+          const card = renderListingCard(l, session.id);
+          // Inject distance badge
+          return card.replace('</div>\n      <div class="listing-card-body">', `<span style="position:absolute;bottom:44px;left:12px;background:rgba(0,0,0,0.6);color:white;padding:3px 10px;border-radius:20px;font-size:0.75rem;">📏 ${l.dist.toFixed(1)} km away</span></div>\n      <div class="listing-card-body">`);
+        }).join('');
+      }
+    }
+  }
+
+  // Haversine formula
+  function calcDist(lat1, lng1, lat2, lng2) {
+    const R = 6371;
+    const dLat = (lat2-lat1)*Math.PI/180;
+    const dLng = (lng2-lng1)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  function updateMyLocation() {
+    if (!navigator.geolocation) { showToast('Geolocation not supported.','error'); return; }
+    showToast('Getting your location…','info',2000);
+    navigator.geolocation.getCurrentPosition(async pos => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      const session = Auth.getSession();
+      const users   = getDB(DB.USERS);
+      const idx     = users.findIndex(u => u.id === session.id);
+      let address   = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      try {
+        const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
+        const data = await res.json();
+        address = data.display_name || address;
+      } catch(e) {}
+      if (idx !== -1) { users[idx].lat = lat; users[idx].lng = lng; users[idx].address = address; setDB(DB.USERS, users); }
+      showToast('Location updated!','success');
+      document.querySelector('.dash-nav-item[data-panel="nearby"]').click();
+    }, () => showToast('Could not get location.','error'));
+  }
+
+  // Profile panel
+  document.querySelector('.dash-nav-item[data-panel="profile"]')?.addEventListener('click', () => {
+    const session = Auth.getSession();
+    const user    = getDB(DB.USERS).find(u => u.id === session.id) || session;
+    const card    = document.getElementById('renter-profile-card');
+    if (!card) return;
+    card.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:0.9rem;">
+        <div><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">Full Name</label><div style="font-weight:600;margin-top:4px;">${sanitize(user.name)}</div></div>
+        <div><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">Email</label><div style="font-weight:600;margin-top:4px;">${sanitize(user.email)}</div></div>
+        <div><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">Phone</label><div style="font-weight:600;margin-top:4px;">${sanitize(user.phone||'—')}</div></div>
+        <div><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">Member Since</label><div style="font-weight:600;margin-top:4px;">${fmt(user.createdAt)}</div></div>
+        ${user.lat ? `<div style="grid-column:1/-1;"><label style="font-size:0.75rem;color:var(--gray-dk);text-transform:uppercase;letter-spacing:1px;">Your Location</label><div style="font-weight:600;margin-top:4px;">📍 ${sanitize(user.address||user.lat+', '+user.lng)}</div></div>` : `<div style="grid-column:1/-1"><button class="btn btn-outline btn-sm" onclick="updateMyLocation()">📡 Set My Location</button></div>`}
+      </div>
+      <div style="margin-top:20px;">
+        <span class="badge badge-available">${sanitize(user.status||'active')}</span>
+      </div>`;
+  });
+</script>
+</body>
+</html>
+

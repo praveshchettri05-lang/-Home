@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel — 2nd Home</title>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="css/dashboard.css"/>
+  <style>
+    .admin-login-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a0408, #3d0710, #5c0a14);
+      padding: 24px;
+    }
+    .admin-login-box {
+      background: var(--cream);
+      border-radius: 16px;
+      border: 2px solid var(--gold);
+      padding: 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+    }
+    .admin-login-box .shield { font-size: 3rem; text-align:center; margin-bottom:12px; }
+    .admin-login-box h2 { text-align:center; color:var(--burgundy); margin-bottom:4px; }
+    .admin-login-box p  { text-align:center; color:var(--gray-dk); font-size:0.88rem; margin-bottom:24px; }
+    .admin-cred-hint {
+      background: rgba(201,168,76,0.1);
+      border: 1px solid rgba(201,168,76,0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 0.8rem;
+      color: var(--saddle);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ADMIN LOGIN SCREEN (shown before auth) -->
+<div id="admin-login-screen" class="admin-login-wrap">
+  <div class="admin-login-box">
+    <div class="shield">🛡️</div>
+    <h2>Admin Portal</h2>
+    <p>Restricted access — 2nd Home administration only</p>
+    <div class="admin-cred-hint" id="otp-hint" style="display:none;">
+      ℹ️ For demo purposes, the OTP is <strong>123456</strong>.
+    </div>
+    <div class="form-group">
+      <label>Admin Email<span class="required">*</span></label>
+      <input type="email" class="form-control" id="admin-email" value="praveshchettri05@gmail.com" readonly/>
+    </div>
+    
+    <div class="form-group" id="otp-group" style="display:none;">
+      <label>Enter OTP<span class="required">*</span></label>
+      <input type="text" class="form-control" id="admin-otp" placeholder="6-digit code"/>
+    </div>
+    
+    <div class="form-error" id="admin-login-error" style="margin-bottom:12px;"></div>
+    
+    <button class="btn btn-primary btn-block btn-lg" id="btn-send-otp" onclick="sendAdminOTP()">📧 Send OTP to Email</button>
+    <button class="btn btn-success btn-block btn-lg" id="btn-verify-otp" style="display:none;" onclick="verifyAdminOTP()">🔐 Verify & Login</button>
+
+    <div style="text-align:center;margin-top:24px;">
+      <a href="index.html" style="font-size:0.82rem;color:var(--gray-dk);">← Back to Home</a>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN DASHBOARD (shown after auth) -->
+<div id="admin-dashboard" style="display:none;">
+<nav class="navbar" style="position:relative;top:0;transform:none;box-shadow:none;">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><span class="logo-icon">🛡️</span>Admin<span>2nd Home</span></a>
+    <ul class="nav-links">
+      <li><a href="listings.html" target="_blank">View Site</a></li>
+      <li><button onclick="Auth.logout()" class="btn btn-outline btn-sm" style="color:rgba(255,255,255,0.7);">Logout</button></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="dashboard-page">
+  <div class="dashboard-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="dash-sidebar">
+      <div class="dash-profile">
+        <div class="dash-avatar" style="background:var(--gold);color:var(--burgundy-dk);">🛡️</div>
+        <div class="dash-name">Administrator</div>
+        <div class="dash-role">Full Access</div>
+      </div>
+
+      <div class="dash-nav-section">Overview</div>
+      <div class="dash-nav-item active" data-panel="dashboard"><span class="nav-icon">📊</span> Dashboard</div>
+
+      <div class="dash-nav-section">Content</div>
+      <div class="dash-nav-item" data-panel="listings"><span class="nav-icon">🏠</span> All Listings</div>
+      <div class="dash-nav-item" data-panel="owners"><span class="nav-icon">🏡</span> Owners</div>
+      <div class="dash-nav-item" data-panel="users"><span class="nav-icon">👥</span> Renters</div>
+
+      <div class="dash-nav-section">Activity</div>
+      <div class="dash-nav-item" data-panel="bookings"><span class="nav-icon">📅</span> Bookings</div>
+      <div class="dash-nav-item" data-panel="messages"><span class="nav-icon">💬</span> Messages</div>
+
+      <div class="dash-logout" id="logout-btn"><span>🚪</span> Logout</div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="dash-main">
+
+      <!-- DASHBOARD -->
+      <div class="dash-panel active" id="panel-dashboard">
+        <div class="dash-panel-header">
+          <div><h2>📊 Admin Dashboard</h2><p>Overview of all platform activity</p></div>
+          <button class="btn btn-outline btn-sm" onclick="showAdminPanel('dashboard')">🔄 Refresh</button>
+        </div>
+        <div class="stat-cards-grid">
+          <div class="stat-card"><div class="stat-icon">🏠</div><span class="stat-val" id="stat-total-listings">—</span><span class="stat-lbl">Total Listings</span></div>
+          <div class="stat-card" style="border-left-color:#f39c12;"><div class="stat-icon">⏳</div><span class="stat-val" id="stat-pending">—</span><span class="stat-lbl">Pending Approval</span></div>
+          <div class="stat-card" style="border-left-color:#27ae60;"><div class="stat-icon">🏡</div><span class="stat-val" id="stat-owners">—</span><span class="stat-lbl">Owners</span></div>
+          <div class="stat-card" style="border-left-color:#2980b9;"><div class="stat-icon">👥</div><span class="stat-val" id="stat-users">—</span><span class="stat-lbl">Renters</span></div>
+          <div class="stat-card" style="border-left-color:#8e44ad;"><div class="stat-icon">📅</div><span class="stat-val" id="stat-bookings">—</span><span class="stat-lbl">Bookings</span></div>
+          <div class="stat-card" style="border-left-color:#16a085;"><div class="stat-icon">💬</div><span class="stat-val" id="stat-messages">—</span><span class="stat-lbl">Messages</span></div>
+        </div>
+
+        <!-- Pending approvals quick view -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:8px;">
+          <div class="form-section">
+            <h3>⏳ Pending Listing Approvals</h3>
+            <div id="pending-listings-quick"></div>
+          </div>
+          <div class="form-section">
+            <h3>📋 Recent Listings</h3>
+            <div id="recent-listings-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LISTINGS -->
+      <div class="dash-panel" id="panel-listings">
+        <div class="dash-panel-header">
+          <div><h2>🏠 All Listings</h2><p>Manage, approve, feature, or remove listings</p></div>
+        </div>
+        <div class="dash-search">
+          <span>🔍</span>
+          <input type="text" id="admin-listing-search" placeholder="Search by title, city or type…" onkeyup="adminFilterListings()"/>
+        </div>
+        <div id="admin-listings-container"></div>
+      </div>
+
+      <!-- OWNERS -->
+      <div class="dash-panel" id="panel-owners">
+        <div class="dash-panel-header">
+          <div><h2>🏡 Owners</h2><p>Verify, suspend, or remove property owners</p></div>
+        </div>
+        <div class="dash-search">
+          <span>🔍</span>
+          <input type="text" id="admin-owner-search" placeholder="Search owners…" onkeyup="adminFilterOwners()"/>
+        </div>
+        <div id="admin-owners-container"></div>
+      </div>
+
+      <!-- USERS -->
+      <div class="dash-panel" id="panel-users">
+        <div class="dash-panel-header">
+          <div><h2>👥 Renters</h2><p>Manage renter accounts</p></div>
+        </div>
+        <div class="dash-search">
+          <span>🔍</span>
+          <input type="text" id="admin-user-search" placeholder="Search renters…" onkeyup="adminFilterUsers()"/>
+        </div>
+        <div id="admin-users-container"></div>
+      </div>
+
+      <!-- BOOKINGS -->
+      <div class="dash-panel" id="panel-bookings">
+        <div class="dash-panel-header"><div><h2>📅 All Bookings</h2><p>Platform-wide booking overview</p></div></div>
+        <div id="admin-bookings-container"></div>
+      </div>
+
+      <!-- MESSAGES -->
+      <div class="dash-panel" id="panel-messages">
+        <div class="dash-panel-header"><div><h2>💬 All Messages</h2><p>All conversations on the platform</p></div></div>
+        <div id="admin-messages-container"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+</div><!-- /admin-dashboard -->
+
+<div class="toast-container"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/app.js"></script>
+<script src="js/admin.js"></script>
+<script>
+  /* ── INIT ── */
+  document.addEventListener('DOMContentLoaded', () => {
+    checkAdmin();
+    setInterval(updateStats, 10000);
+  });
+
+  function checkAdmin() {
+    if (Auth.isAdmin()) {
+      document.getElementById('admin-login-screen').style.display = 'none';
+      document.getElementById('admin-dashboard').style.display = 'block';
+      initAdminPanel();
+    }
+  }
+
+  /* ── Admin OTP Login ── */
+  let currentOTP = null;
+
+  async function sendAdminOTP() {
+    const email = document.getElementById('admin-email').value;
+    const err = document.getElementById('admin-login-error');
+    err.textContent = '';
+
+    if (email.toLowerCase() !== Auth.ADMIN_EMAIL.toLowerCase()) {
+      err.textContent = 'Access Denied: You are not the site administrator.';
+      return;
+    }
+
+    // Simulate sending OTP
+    currentOTP = '123456';
+    
+    document.getElementById('btn-send-otp').style.display = 'none';
+    document.getElementById('otp-group').style.display = 'block';
+    document.getElementById('btn-verify-otp').style.display = 'block';
+    document.getElementById('otp-hint').style.display = 'block';
+    
+    showToast('OTP sent to ' + email + ' (Simulated)', 'info');
+  }
+
+  async function verifyAdminOTP() {
+    const otp = document.getElementById('admin-otp').value;
+    const email = document.getElementById('admin-email').value;
+    const err = document.getElementById('admin-login-error');
+    err.textContent = '';
+
+    if (!otp) {
+      err.textContent = 'Please enter the OTP.';
+      return;
+    }
+
+    if (otp !== currentOTP) {
+      err.textContent = 'Invalid OTP. Please try again.';
+      return;
+    }
+
+    // Success! Log them in
+    const session = { id: 'admin', name: 'System Admin', email, role: 'admin' };
+    localStorage.setItem('re_session', JSON.stringify(session));
+    checkAdmin();
+    showToast('Welcome, Administrator!', 'success');
+  }
+
+  function initAdminPanel() {
+    showAdminPanel('dashboard');
+  }
+
+  // Logout
+  document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
+
+  /* ── Pending Quick View ── */
+  function renderPendingQuick() {
+    const pending = Listings.getAll().filter(l=>l.status==='pending');
+    const el = document.getElementById('pending-listings-quick');
+    if (!el) return;
+    if (pending.length === 0) {
+      el.innerHTML = '<p style="color:var(--gray-dk);font-size:0.88rem;">✓ No listings pending approval.</p>';
+      return;
+    }
+    el.innerHTML = pending.slice(0,5).map(l => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--ivory-dk);gap:8px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.88rem;font-weight:600;">${sanitize(l.title.substring(0,40))}</div>
+          <div style="font-size:0.78rem;color:var(--gray-dk);">${getCategoryLabel(l.type)} · ${sanitize(l.city)}</div>
+        </div>
+        <button class="btn btn-success btn-sm" onclick="adminApproveListing('${l.id}');renderPendingQuick();">✓ Approve</button>
+      </div>`).join('');
+    if (pending.length > 5) {
+      el.innerHTML += `<p style="font-size:0.8rem;color:var(--gray-dk);margin-top:10px;">…and ${pending.length-5} more. <a onclick="showAdminPanel('listings')" style="color:var(--burgundy);cursor:pointer;">View all →</a></p>`;
+    }
+  }
+
+  // Override renderAdminDashboard to include pending quick view
+  const _origDash = renderAdminDashboard;
+  function renderAdminDashboard() {
+    _origDash();
+    renderPendingQuick();
+  }
+
+  /* ── Search / Filter helpers ── */
+  function adminFilterListings() {
+    const q = document.getElementById('admin-listing-search').value.toLowerCase();
+    document.querySelectorAll('#admin-listings-container tbody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+  function adminFilterOwners() {
+    const q = document.getElementById('admin-owner-search').value.toLowerCase();
+    document.querySelectorAll('#admin-owners-container tbody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+  function adminFilterUsers() {
+    const q = document.getElementById('admin-user-search').value.toLowerCase();
+    document.querySelectorAll('#admin-users-container tbody tr').forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+  }
+</script>
+</body>
+</html>
+

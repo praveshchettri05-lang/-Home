@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Property Detail — 2nd Home</title>
+  <link rel="stylesheet" href="css/main.css"/>
+  <link rel="stylesheet" href="css/components.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><span class="logo-icon">🏛️</span>2nd Home<span>INDIA</span></a>
+    <ul class="nav-links" id="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="listings.html" class="active">Browse</a></li>
+      <li><a href="owner-dashboard.html">List Property</a></li>
+      <li id="nav-auth"><a href="auth.html" class="btn-nav-cta">Get Started</a></li>
+    </ul>
+    <div class="nav-hamburger" id="hamburger"><span></span><span></span><span></span></div>
+  </div>
+</nav>
+
+<!-- PAGE HEADER -->
+<div class="page-header" id="detail-header" style="padding-bottom:24px;">
+  <div class="container">
+    <div class="breadcrumb">
+      <a href="index.html">Home</a>
+      <span>/</span>
+      <a href="listings.html">Browse</a>
+      <span>/</span>
+      <span id="breadcrumb-title">Property</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<section class="section" style="padding-top:40px;padding-bottom:80px;">
+  <div class="container">
+    <div id="detail-content">
+      <!-- Injected by JS -->
+      <div class="empty-state" id="loading-state">
+        <span class="empty-icon">⏳</span>
+        <h3>Loading property…</h3>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <button class="lightbox-nav lightbox-prev" onclick="lightboxNav(-1)">‹</button>
+  <img class="lightbox-img" id="lightbox-img" src="" alt="Property photo"/>
+  <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1)">›</button>
+  <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
+
+<!-- BOOK NOW MODAL -->
+<div class="modal-overlay" id="book-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>📅 Request Booking</h3>
+      <button class="modal-close" onclick="closeModal('book-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="book-form">
+        <div class="form-group">
+          <label>Duration Type<span class="required">*</span></label>
+          <select class="form-control" id="book-duration" required>
+            <option value="">Select duration</option>
+            <option value="daily">Per Day</option>
+            <option value="weekly">Per Week</option>
+            <option value="monthly">Per Month</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Start Date<span class="required">*</span></label>
+            <input type="date" class="form-control" id="book-start" required/>
+          </div>
+          <div class="form-group">
+            <label>End Date<span class="required">*</span></label>
+            <input type="date" class="form-control" id="book-end" required/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Message to Owner</label>
+          <textarea class="form-control" id="book-msg" rows="3" placeholder="Introduce yourself or ask questions…"></textarea>
+        </div>
+        <div id="book-price-preview" style="background:var(--ivory-dk);padding:14px;border-radius:8px;margin-bottom:16px;display:none;">
+          <strong>Estimated Total: </strong><span id="book-total-price"></span>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg">Send Booking Request</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT MODAL -->
+<div class="modal-overlay" id="contact-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>💬 Contact Owner</h3>
+      <button class="modal-close" onclick="closeModal('contact-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="contact-thread" class="message-thread" style="max-height:280px;overflow-y:auto;margin-bottom:16px;"></div>
+      <div style="display:flex;gap:10px;align-items:flex-end;">
+        <textarea class="form-control" id="contact-input" rows="2" placeholder="Type your message…" style="flex:1;"></textarea>
+        <button class="btn btn-primary" id="contact-send" style="flex-shrink:0;">Send</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="scroll-top" title="Back to top">↑</button>
+<div class="toast-container"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/map.js"></script>
+<script>
+  let currentListing = null;
+  let lightboxPhotos = [];
+  let lightboxIdx    = 0;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const params    = new URLSearchParams(window.location.search);
+    const listingId = params.get('id');
+
+    if (!listingId) { showError('No listing ID provided.'); return; }
+
+    const listing = Listings.getById(listingId);
+    if (!listing)  { showError('Listing not found. It may have been removed.'); return; }
+
+    // Block non-approved for regular users (admin/owner can still preview)
+    const session = Auth.getSession();
+    if (listing.status !== 'approved' && !(session?.role === 'admin' || (session?.role === 'owner' && session.id === listing.ownerId))) {
+      showError('This listing is pending admin approval and is not yet public.');
+      return;
+    }
+
+    Listings.incrementViews(listingId);
+    currentListing = listing;
+    renderDetailPage(listing);
+  });
+
+  function showError(msg) {
+    document.getElementById('detail-content').innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">⚠️</span>
+        <h3>${sanitize(msg)}</h3>
+        <a href="listings.html" class="btn btn-outline mt-16">← Back to Listings</a>
+      </div>`;
+  }
+
+  function renderDetailPage(l) {
+    const owner    = Auth.getOwnerById(l.ownerId) || { name: 'Property Owner' };
+    const session  = Auth.getSession();
+    const isRenter = session?.role === 'renter';
+    const isFav    = isRenter ? Favorites.isFav(session.id, l.id) : false;
+
+    lightboxPhotos = l.photos || [];
+
+    document.getElementById('breadcrumb-title').textContent = l.title;
+    document.title = l.title + ' — 2nd Home';
+
+    // Gallery
+    const galleryHtml = buildGallery(l.photos || []);
+
+    // Amenities
+    const amenHtml = (l.amenities || []).map(a => `<span class="amenity-tag">${sanitize(a)}</span>`).join('');
+
+    // Pricing
+    const prices = [];
+    if (l.priceDaily)   prices.push({ label: 'Per Day',   val: l.priceDaily   });
+    if (l.priceWeekly)  prices.push({ label: 'Per Week',  val: l.priceWeekly  });
+    if (l.priceMonthly) prices.push({ label: 'Per Month', val: l.priceMonthly });
+
+    const priceBoxHtml = prices.map(p => `
+      <div class="price-option">
+        <div class="price-label">${p.label}</div>
+        <div class="price-val">₹${Number(p.val).toLocaleString('en-IN')}<small>/period</small></div>
+      </div>`).join('<div style="width:1px;background:var(--gray-mid);opacity:.4;"></div>');
+
+    // Status badge
+    const statusBadge = l.available !== false
+      ? '<span class="badge badge-available">✓ Available Now</span>'
+      : '<span class="badge badge-occupied">Currently Unavailable</span>';
+
+    const initial = owner.name.charAt(0).toUpperCase();
+
+    document.getElementById('detail-content').innerHTML = `
+      <!-- Gallery -->
+      <div style="margin-bottom:32px;">${galleryHtml}</div>
+
+      <div class="detail-layout">
+        <!-- LEFT COLUMN -->
+        <div>
+          <!-- Title & Badges -->
+          <div class="detail-info-card" style="padding-bottom:20px;">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+              <span class="badge ${getCategoryBadge(l.type)}">${getCategoryIcon(l.type)} ${getCategoryLabel(l.type)}</span>
+              ${l.featured ? '<span class="badge badge-featured">⭐ Featured</span>' : ''}
+              ${statusBadge}
+            </div>
+            <h1 class="detail-title">${sanitize(l.title)}</h1>
+            <div class="detail-location-row">
+              📍 <strong>${sanitize(l.address)},</strong>&nbsp;${sanitize(l.city)}
+              <a href="#map-section" style="margin-left:auto;font-size:0.82rem;color:var(--burgundy);">View on map ↓</a>
+            </div>
+            <!-- Price Box -->
+            <div class="detail-price-box">${priceBoxHtml}</div>
+            <p style="color:var(--gray-dk);font-size:0.9rem;">👁 ${l.views || 0} views · Listed on ${fmt(l.createdAt)}</p>
+          </div>
+
+          <!-- Description -->
+          <div class="detail-info-card">
+            <h2>About This Property</h2>
+            <p style="color:var(--walnut);line-height:1.8;">${sanitize(l.description)}</p>
+          </div>
+
+          <!-- Amenities -->
+          ${(l.amenities || []).length > 0 ? `
+          <div class="detail-info-card">
+            <h2>Amenities & Features</h2>
+            <div class="amenities-list">${amenHtml}</div>
+          </div>` : ''}
+
+          <!-- Video -->
+          ${l.video ? `
+          <div class="detail-info-card">
+            <h2>Video Tour</h2>
+            <div class="video-container">
+              <video controls style="width:100%;border-radius:8px;">
+                <source src="${sanitize(l.video)}">
+                Your browser does not support video playback.
+              </video>
+            </div>
+          </div>` : ''}
+
+          <!-- Map -->
+          <div class="detail-info-card" id="map-section">
+            <h2>📍 Location on Map</h2>
+            <p style="font-size:0.85rem;color:var(--gray-dk);margin-bottom:12px;">📌 ${sanitize(l.address)}, ${sanitize(l.city)}</p>
+            <div id="listing-map"></div>
+            <p style="font-size:0.78rem;color:var(--gray-mid);margin-top:8px;">* Exact address shared after booking is confirmed.</p>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN — Sticky Contact Card -->
+        <div>
+          <div class="contact-card">
+            <div class="price-highlight">
+              ${l.priceMonthly ? `₹${Number(l.priceMonthly).toLocaleString('en-IN')} <small>/month</small>` : l.priceWeekly ? `₹${Number(l.priceWeekly).toLocaleString('en-IN')} <small>/week</small>` : l.priceDaily ? `₹${Number(l.priceDaily).toLocaleString('en-IN')} <small>/day</small>` : 'Price on request'}
+            </div>
+
+            <!-- Owner Info -->
+            <div class="owner-contact-info">
+              <div class="owner-avatar-lg">${initial}</div>
+              <div>
+                <div style="font-weight:700;color:var(--walnut);">${sanitize(owner.name)}</div>
+                <div style="font-size:0.8rem;color:var(--gray-dk);">${owner.verified ? '✓ Verified Owner' : 'Property Owner'}</div>
+                ${owner.phone ? `<div style="font-size:0.85rem;color:var(--burgundy);margin-top:4px;">📞 ${sanitize(owner.phone)}</div>` : ''}
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              ${isRenter ? `
+                <button class="btn btn-primary btn-block btn-lg" onclick="openModal('book-modal')">📅 Request Booking</button>
+                <button class="btn btn-outline btn-block" onclick="openContactModal()">💬 Message Owner</button>
+                <button class="wishlist-btn-large ${isFav ? 'active' : ''}" onclick="toggleFavDetail()" style="
+                  display:flex;align-items:center;justify-content:center;gap:8px;
+                  padding:10px;border-radius:8px;border:1px solid var(--ivory-dk);
+                  background:var(--cream);cursor:pointer;font-size:0.88rem;color:var(--gray-dk);
+                  transition:all 0.3s;width:100%;">
+                  <span id="fav-icon">${isFav ? '♥' : '♡'}</span> ${isFav ? 'Saved to Favourites' : 'Save to Favourites'}
+                </button>` :
+                !session ? `
+                <a href="auth.html" class="btn btn-primary btn-block btn-lg">Login to Book</a>
+                <a href="auth.html" class="btn btn-outline btn-block">Login to Message Owner</a>` :
+                `<a href="${session.role}-dashboard.html" class="btn btn-outline btn-block">Go to Dashboard</a>`
+              }
+            </div>
+
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--ivory-dk);font-size:0.8rem;color:var(--gray-dk);">
+              🔒 Your personal details are safe and shared only after booking confirmation.
+            </div>
+          </div>
+        </div>
+      </div>`;
+
+    // Init map
+    if (l.lat && l.lng) {
+      initDetailMap(l.lat, l.lng, l.title);
+    }
+
+    // Setup book modal
+    setupBookModal(l, session, owner);
+
+    // Setup contact modal
+    if (isRenter) {
+      setupContactModal(l, session);
+    }
+  }
+
+  // ── Gallery ──
+  function buildGallery(photos) {
+    if (!photos || photos.length === 0) {
+      return `<div class="no-video-placeholder" style="height:400px;border-radius:12px;">🏠<br><small style="font-size:1rem;">No photos available</small></div>`;
+    }
+    if (photos.length === 1) {
+      return `<div style="height:480px;border-radius:12px;overflow:hidden;cursor:pointer;" onclick="openLightbox(0)">
+        <img src="${sanitize(photos[0])}" style="width:100%;height:100%;object-fit:cover;" alt="Property">
+      </div>`;
+    }
+    const extras = photos.length - 3;
+    return `
+      <div class="gallery-grid">
+        <div class="gallery-main" onclick="openLightbox(0)">
+          <img src="${sanitize(photos[0])}" alt="Main photo">
+        </div>
+        <div class="gallery-thumb" onclick="openLightbox(1)">
+          <img src="${sanitize(photos[1] || photos[0])}" alt="Photo 2">
+        </div>
+        <div class="gallery-thumb" onclick="openLightbox(2)" style="position:relative;">
+          <img src="${sanitize(photos[2] || photos[0])}" alt="Photo 3">
+          ${extras > 0 ? `<div class="more-overlay">+${extras} more</div>` : ''}
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:8px;">
+        <button onclick="openLightbox(0)" class="btn btn-outline btn-sm">🖼️ View All ${photos.length} Photos</button>
+      </div>`;
+  }
+
+  // ── Lightbox ──
+  function openLightbox(idx) {
+    lightboxIdx = idx;
+    const lb = document.getElementById('lightbox');
+    lb.classList.add('open');
+    updateLightboxImg();
+    document.addEventListener('keydown', lightboxKeyHandler);
+  }
+  function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('open');
+    document.removeEventListener('keydown', lightboxKeyHandler);
+  }
+  function lightboxNav(dir) {
+    lightboxIdx = (lightboxIdx + dir + lightboxPhotos.length) % lightboxPhotos.length;
+    updateLightboxImg();
+  }
+  function updateLightboxImg() {
+    const img = document.getElementById('lightbox-img');
+    const cnt = document.getElementById('lightbox-counter');
+    if (img) img.src = lightboxPhotos[lightboxIdx] || '';
+    if (cnt) cnt.textContent = `${lightboxIdx + 1} / ${lightboxPhotos.length}`;
+  }
+  function lightboxKeyHandler(e) {
+    if (e.key === 'ArrowRight') lightboxNav(1);
+    if (e.key === 'ArrowLeft')  lightboxNav(-1);
+    if (e.key === 'Escape')     closeLightbox();
+  }
+  document.getElementById('lightbox').addEventListener('click', e => { if (e.target === e.currentTarget) closeLightbox(); });
+
+  // ── Book Modal ──
+  function setupBookModal(l, session, owner) {
+    const form = document.getElementById('book-form');
+    if (!form) return;
+
+    // Set min date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('book-start').min = today;
+    document.getElementById('book-end').min   = today;
+
+    // Live price preview
+    ['book-duration', 'book-start', 'book-end'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', updateBookPrice);
+    });
+
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      if (!session || session.role !== 'renter') { showToast('Please login as renter to book.', 'error'); return; }
+
+      const dur   = document.getElementById('book-duration').value;
+      const start = document.getElementById('book-start').value;
+      const end   = document.getElementById('book-end').value;
+      const msg   = document.getElementById('book-msg').value.trim();
+
+      if (!dur || !start || !end) { showToast('Please fill all required fields.', 'error'); return; }
+      if (new Date(end) <= new Date(start)) { showToast('End date must be after start date.', 'error'); return; }
+
+      const priceMap = { daily: l.priceDaily, weekly: l.priceWeekly, monthly: l.priceMonthly };
+      const price    = priceMap[dur] || 0;
+      const days     = Math.ceil((new Date(end) - new Date(start)) / 86400000);
+      const units    = dur === 'daily' ? days : dur === 'weekly' ? Math.ceil(days/7) : Math.ceil(days/30);
+      const total    = price * units;
+
+      Bookings.create({
+        listingId: l.id, ownerId: l.ownerId, renterId: session.id,
+        renterName: session.name, renterEmail: session.email,
+        renterPhone: Auth.getUserById(session.id)?.phone || '',
+        listingTitle: l.title, duration: dur,
+        startDate: start, endDate: end, totalPrice: total, message: msg,
+      });
+
+      closeModal('book-modal');
+      showToast('Booking request sent! The owner will review and confirm.', 'success');
+    };
+  }
+
+  function updateBookPrice() {
+    const dur   = document.getElementById('book-duration').value;
+    const start = document.getElementById('book-start').value;
+    const end   = document.getElementById('book-end').value;
+    const prev  = document.getElementById('book-price-preview');
+    const tot   = document.getElementById('book-total-price');
+    if (!currentListing || !dur || !start || !end || new Date(end) <= new Date(start)) {
+      if (prev) prev.style.display = 'none';
+      return;
+    }
+    const priceMap = { daily: currentListing.priceDaily, weekly: currentListing.priceWeekly, monthly: currentListing.priceMonthly };
+    const price    = priceMap[dur];
+    if (!price) { prev.style.display = 'none'; return; }
+    const days  = Math.ceil((new Date(end) - new Date(start)) / 86400000);
+    const units = dur === 'daily' ? days : dur === 'weekly' ? Math.ceil(days/7) : Math.ceil(days/30);
+    const total = price * units;
+    if (tot) tot.textContent = `₹${Number(total).toLocaleString('en-IN')} (${units} ${dur === 'daily' ? 'days' : dur === 'weekly' ? 'weeks' : 'months'} × ₹${price.toLocaleString('en-IN')})`;
+    if (prev) prev.style.display = 'block';
+  }
+
+  // ── Contact Modal ──
+  function setupContactModal(l, session) {
+    const sendBtn = document.getElementById('contact-send');
+    const input   = document.getElementById('contact-input');
+    if (!sendBtn) return;
+
+    sendBtn.addEventListener('click', () => {
+      const text = input.value.trim();
+      if (!text) return;
+      Messages.send({ listingId: l.id, ownerId: l.ownerId, renterId: session.id, sender: 'renter', senderName: session.name, text });
+      input.value = '';
+      refreshContactThread(l, session);
+      showToast('Message sent!', 'success');
+    });
+
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendBtn.click(); } });
+  }
+
+  function openContactModal() {
+    const session = Auth.getSession();
+    if (!session || session.role !== 'renter') { showToast('Please login as renter to message the owner.', 'error'); return; }
+    refreshContactThread(currentListing, session);
+    openModal('contact-modal');
+  }
+
+  function refreshContactThread(l, session) {
+    const thread = document.getElementById('contact-thread');
+    if (!thread) return;
+    const msgs = Messages.getConversation(l.id, session.id).sort((a,b) => new Date(a.createdAt)-new Date(b.createdAt));
+    thread.innerHTML = msgs.length === 0
+      ? '<div style="text-align:center;color:var(--gray-mid);padding:20px;">Start the conversation!</div>'
+      : msgs.map(m => `
+          <div class="message-bubble ${m.sender === 'renter' ? 'sent' : 'received'}">
+            ${sanitize(m.text)}
+            <div class="message-time">${fmtTime(m.createdAt)}</div>
+          </div>`).join('');
+    thread.scrollTop = thread.scrollHeight;
+  }
+
+  // ── Favourites ──
+  function toggleFavDetail() {
+    const session = Auth.getSession();
+    if (!session || session.role !== 'renter') return;
+    const added = Favorites.toggle(session.id, currentListing.id);
+    const icon  = document.getElementById('fav-icon');
+    if (icon) icon.textContent = added ? '♥' : '♡';
+    const btn = document.querySelector('.wishlist-btn-large');
+    if (btn)  btn.innerHTML = `<span id="fav-icon">${added ? '♥' : '♡'}</span> ${added ? 'Saved to Favourites' : 'Save to Favourites'}`;
+    showToast(added ? 'Added to favourites!' : 'Removed from favourites.', added ? 'success' : 'info');
+  }
+
+  // ── Modal helpers ──
+  function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
+  function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+  document.addEventListener('click', e => {
+    if (e.target.classList.contains('modal-overlay')) {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    }
+  });
+</script>
+</body>
+</html>
+

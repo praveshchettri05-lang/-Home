@@ -8,16 +8,24 @@
 let adminTab = 'dashboard';
 
 document.addEventListener('DOMContentLoaded', () => {
-  if (!Auth.requireAuth('admin')) return;
+  // Only initialize admin panel if already authenticated (admin-login-screen handles the rest)
+  if (Auth.isAdmin()) {
+    document.getElementById('admin-login-screen').style.display = 'none';
+    document.getElementById('admin-dashboard').style.display = 'block';
+    _initAdminPanel();
+  }
 
   document.querySelectorAll('.dash-nav-item').forEach(item => {
     item.addEventListener('click', () => showAdminPanel(item.dataset.panel));
   });
 
   document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
-
-  showAdminPanel('dashboard');
 });
+
+
+function _initAdminPanel() {
+  showAdminPanel('dashboard');
+}
 
 function showAdminPanel(name) {
   document.querySelectorAll('.dash-panel').forEach(p => p.classList.remove('active'));
@@ -69,6 +77,9 @@ function renderAdminDashboard() {
           <span class="badge badge-${l.status === 'approved' ? 'available' : l.status === 'pending' ? 'pending' : 'occupied'}">${l.status}</span>
         </div>`).join('');
   }
+
+  // Render pending quick view if the function exists
+  if (typeof renderPendingQuick === 'function') renderPendingQuick();
 }
 
 // ── LISTINGS MANAGEMENT ──

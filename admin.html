@@ -206,15 +206,15 @@
 <script>
   /* ── INIT ── */
   document.addEventListener('DOMContentLoaded', () => {
-    checkAdmin();
-    setInterval(updateStats, 10000);
+    // admin.js DOMContentLoaded also fires — it will handle showing dashboard if already logged in
+    // Nothing extra needed here since admin.js does the auth check
   });
 
   function checkAdmin() {
     if (Auth.isAdmin()) {
       document.getElementById('admin-login-screen').style.display = 'none';
       document.getElementById('admin-dashboard').style.display = 'block';
-      initAdminPanel();
+      _initAdminPanel();
     }
   }
 
@@ -231,19 +231,20 @@
       return;
     }
 
-    // Simulate sending OTP
-    currentOTP = '123456';
-    
+    // Generate a random 6-digit OTP
+    currentOTP = Math.floor(100000 + Math.random() * 900000).toString();
+
     document.getElementById('btn-send-otp').style.display = 'none';
     document.getElementById('otp-group').style.display = 'block';
     document.getElementById('btn-verify-otp').style.display = 'block';
     document.getElementById('otp-hint').style.display = 'block';
-    
-    showToast('OTP sent to ' + email + ' (Simulated)', 'info');
+    document.getElementById('otp-hint').innerHTML = `ℹ️ Demo OTP (since no email server): <strong>${currentOTP}</strong>`;
+
+    showToast('OTP generated! (shown above for demo)', 'info');
   }
 
   async function verifyAdminOTP() {
-    const otp = document.getElementById('admin-otp').value;
+    const otp = document.getElementById('admin-otp').value.trim();
     const email = document.getElementById('admin-email').value;
     const err = document.getElementById('admin-login-error');
     err.textContent = '';
@@ -261,16 +262,9 @@
     // Success! Log them in
     const session = { id: 'admin', name: 'System Admin', email, role: 'admin' };
     localStorage.setItem('re_session', JSON.stringify(session));
+    showToast('Welcome, Administrator! 🎉', 'success');
     checkAdmin();
-    showToast('Welcome, Administrator!', 'success');
   }
-
-  function initAdminPanel() {
-    showAdminPanel('dashboard');
-  }
-
-  // Logout
-  document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
 
   /* ── Pending Quick View ── */
   function renderPendingQuick() {
@@ -292,13 +286,6 @@
     if (pending.length > 5) {
       el.innerHTML += `<p style="font-size:0.8rem;color:var(--gray-dk);margin-top:10px;">…and ${pending.length-5} more. <a onclick="showAdminPanel('listings')" style="color:var(--burgundy);cursor:pointer;">View all →</a></p>`;
     }
-  }
-
-  // Override renderAdminDashboard to include pending quick view
-  const _origDash = renderAdminDashboard;
-  function renderAdminDashboard() {
-    _origDash();
-    renderPendingQuick();
   }
 
   /* ── Search / Filter helpers ── */

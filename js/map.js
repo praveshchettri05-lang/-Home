@@ -87,6 +87,7 @@ function initPickerMap(initialLat, initialLng, onPick) {
       attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(map);
+    setTimeout(() => map.invalidateSize(), 50);
 
     const icon = makeIcon(32);
 
@@ -219,6 +220,7 @@ function setupAddressAutocomplete(inputId, map, onFound) {
             input.value = item.display_name;
             suggestions.innerHTML = '';
             map.setView([lat, lng], 18);
+            map.invalidateSize();
             onFound(lat, lng);
           });
         });

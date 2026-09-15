@@ -32,15 +32,42 @@ if (typeof supabase !== 'undefined' && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
  */
 async function uploadToSupabase(file, bucket, folder) {
   folder = folder || 'uploads';
+  window.uploadToSupabaseLastError = null;
   const fileToBase64 = (f) => new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
     reader.onerror = () => resolve(null);
     reader.readAsDataURL(f);
   });
+  const compressedPhoto = async (f) => {
+    if (!f.type.startsWith('image/')) return fileToBase64(f);
+    return new Promise(resolve => {
+      const image = new Image();
+      const reader = new FileReader();
+      reader.onload = () => {
+        image.onload = () => {
+          const maxDimension = 1600;
+          const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(image.width * scale));
+          canvas.height = Math.max(1, Math.round(image.height * scale));
+          canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.82));
+        };
+        image.onerror = () => resolve(null);
+        image.src = reader.result;
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(f);
+    });
+  };
 
   if (!window.supabaseClient) {
-    return await fileToBase64(file);
+    if (file.type.startsWith('video/')) {
+      window.uploadToSupabaseLastError = 'No cloud storage client is configured for video uploads.';
+      return null;
+    }
+    return await compressedPhoto(file);
   }
 
   const ext  = file.name.split('.').pop();
@@ -59,7 +86,9 @@ async function uploadToSupabase(file, bucket, folder) {
         .getPublicUrl(uploadResult.data.path);
       return urlResult.data.publicUrl;
     }
+    window.uploadToSupabaseLastError = uploadResult.error.message;
   } catch (err) {
+    window.uploadToSupabaseLastError = err.message;
     console.warn('[Supabase] Upload failed:', err.message);
   }
 
@@ -71,9 +100,11 @@ async function uploadToSupabase(file, bucket, folder) {
       await firebaseRef.put(file);
       return await firebaseRef.getDownloadURL();
     } catch (err) {
+      window.uploadToSupabaseLastError = err.message;
       console.warn('[Firebase Storage] Upload failed:', err.message);
     }
   }
 
-  return await fileToBase64(file);
+  if (file.type.startsWith('video/')) return null;
+  return await compressedPhoto(file);
 }

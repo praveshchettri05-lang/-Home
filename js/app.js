@@ -167,20 +167,53 @@ const Auth = {
       return { ok: false, msg: 'Access Denied: Only the site owner can access this portal.' };
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+    const localAccounts = [
+      ...getDB(DB.OWNERS).map(user => ({ ...user, accountRole: 'owner' })),
+      ...getDB(DB.USERS).map(user => ({ ...user, accountRole: 'renter' })),
+    ];
+    const localAccount = localAccounts.find(user =>
+      String(user.email || '').toLowerCase() === normalizedEmail &&
+      user.password === password
+    );
+
+    // Demo/local accounts must remain usable when Firebase Email/Password
+    // authentication is disabled or unavailable in a deployment.
+    if (localAccount) {
+      if (localAccount.status === 'suspended') {
+        return { ok: false, msg: 'Account suspended' };
+      }
+      const session = {
+        id: localAccount.id,
+        name: localAccount.name,
+        email: localAccount.email,
+        role: localAccount.accountRole,
+      };
+      setDB(DB.SESSION, session);
+      return { ok: true, user: localAccount };
+    }
+
     try {
       if (!window.auth) throw new Error("Firebase not initialized");
-      const cred = await window.auth.signInWithEmailAndPassword(email, password);
+      const cred = await window.auth.signInWithEmailAndPassword(normalizedEmail, password);
       return await this.handleProviderLogin(cred.user, role, { loginMethod: 'email' });
     } catch (err) {
-      // Fallback for Demo Accounts (since they aren't in Firebase Auth)
-      const list = getDB(role === 'owner' ? DB.OWNERS : DB.USERS);
-      const demoUser = list.find(u => u.email === email && u.password === password);
-      if (demoUser) {
-        const session = { id: demoUser.id, name: demoUser.name, email: demoUser.email, role };
-        setDB(DB.SESSION, session);
-        return { ok: true, user: demoUser };
+      const accountWithEmail = localAccounts.find(user =>
+        String(user.email || '').toLowerCase() === normalizedEmail
+      );
+      if (accountWithEmail && accountWithEmail.accountRole !== role) {
+        return {
+          ok: false,
+          msg: `This account is registered as a ${accountWithEmail.accountRole}. Select that role and try again.`,
+        };
       }
-      return { ok: false, msg: err.message };
+      if (err.code === 'auth/operation-not-allowed') {
+        return { ok: false, msg: 'Email/password login is not enabled yet. Please enable it in Firebase Authentication.' };
+      }
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+        return { ok: false, msg: 'Incorrect email or password.' };
+      }
+      return { ok: false, msg: err.message || 'Unable to sign in.' };
     }
   },
 

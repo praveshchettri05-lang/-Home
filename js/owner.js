@@ -335,7 +335,7 @@ async function handleListingSubmit(e) {
   if (!address) errors.push('Address');
   if (!desc || desc.length < 20) errors.push('Description (min 20 chars)');
   if (!pDaily && !pWeekly && !pMonthly) errors.push('At least one price');
-  if (!pickedLat || !pickedLng) errors.push('Map location (click on the map)');
+  if (!Number.isFinite(pickedLat) || !Number.isFinite(pickedLng)) errors.push('Map location (click on the map)');
 
   if (errors.length > 0) {
     showToast('Please fix: ' + errors.join(', '), 'error', 5000);
@@ -351,7 +351,7 @@ async function handleListingSubmit(e) {
     showToast(`Uploading ${photoFiles.length} photo(s)…`, 'info', 15000);
     const folder = session.id;
     const results = await Promise.all(
-      photoFiles.map(p => uploadToSupabase(p.file, SB_PHOTOS_BUCKET, folder))
+      photoFiles.map(p => uploadToSupabase(p.file, SB_PHOTOS_BUCKET, folder).catch(() => null))
     );
     const failed = results.filter(r => !r).length;
     if (failed > 0) showToast(`${failed} photo(s) failed to upload.`, 'error');
@@ -362,7 +362,7 @@ async function handleListingSubmit(e) {
   let videoUrl = null;
   if (videoFile && videoFile.file) {
     showToast('Uploading video…', 'info', 30000);
-    videoUrl = await uploadToSupabase(videoFile.file, SB_VIDEOS_BUCKET, session.id);
+    videoUrl = await uploadToSupabase(videoFile.file, SB_VIDEOS_BUCKET, session.id).catch(() => null);
     if (!videoUrl) showToast('Video upload failed. Listing will be saved without video.', 'error');
   }
 

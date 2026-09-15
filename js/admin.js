@@ -6,21 +6,78 @@
 'use strict';
 
 let adminTab = 'dashboard';
+const ADMIN_ACCESS_KEY = 're_admin_access';
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Only initialize admin panel if already authenticated (admin-login-screen handles the rest)
-  if (Auth.isAdmin()) {
-    document.getElementById('admin-login-screen').style.display = 'none';
-    document.getElementById('admin-dashboard').style.display = 'block';
-    _initAdminPanel();
-  }
+  document.getElementById('admin-login-form')?.addEventListener('submit', handleAdminLogin);
+  if (isAdminPortalAuthenticated()) showAdminDashboard();
+  else showAdminLogin();
 
   document.querySelectorAll('.dash-nav-item').forEach(item => {
     item.addEventListener('click', () => showAdminPanel(item.dataset.panel));
   });
 
-  document.getElementById('logout-btn')?.addEventListener('click', () => Auth.logout());
+  document.getElementById('logout-btn')?.addEventListener('click', logoutAdmin);
 });
+
+function showAdminLogin() {
+  document.getElementById('admin-login-screen').style.display = 'flex';
+  document.getElementById('admin-dashboard').style.display = 'none';
+}
+
+function showAdminDashboard() {
+  document.getElementById('admin-login-screen').style.display = 'none';
+  document.getElementById('admin-dashboard').style.display = 'block';
+  _initAdminPanel();
+}
+
+async function handleAdminLogin(event) {
+  event.preventDefault();
+  const input = document.getElementById('admin-password');
+  const error = document.getElementById('admin-login-error');
+  if (error) error.textContent = '';
+  if (!input.value) {
+    error.textContent = 'Please enter the password.';
+    input.focus();
+    return;
+  }
+  const button = event.submitter;
+  if (button) button.disabled = true;
+  try {
+    const result = await fetch('/api/admin-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: input.value }),
+    });
+    const data = await result.json();
+    if (!result.ok) throw new Error(data.error || 'Unable to sign in.');
+    sessionStorage.setItem(ADMIN_ACCESS_KEY, data.token);
+    input.value = '';
+    showToast('Welcome, Administrator!', 'success');
+    showAdminDashboard();
+  } catch (err) {
+    error.textContent = err.message;
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function logoutAdmin() {
+  sessionStorage.removeItem(ADMIN_ACCESS_KEY);
+  localStorage.removeItem(DB.SESSION);
+  showAdminLogin();
+}
+
+function isAdminPortalAuthenticated() {
+  const token = sessionStorage.getItem(ADMIN_ACCESS_KEY) || '';
+  try {
+    const payload = JSON.parse(atob(token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.role === 'admin' && payload.exp > Date.now();
+  } catch {
+    sessionStorage.removeItem(ADMIN_ACCESS_KEY);
+    return false;
+  }
+}
 
 
 function _initAdminPanel() {

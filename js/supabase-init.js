@@ -35,12 +35,11 @@ async function uploadToSupabase(file, bucket, folder) {
   const fileToBase64 = (f) => new Promise((resolve) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result);
-    reader.onerror = () => resolve(URL.createObjectURL(f)); // fallback to blob if reader fails
+    reader.onerror = () => resolve(null);
     reader.readAsDataURL(f);
   });
 
   if (!window.supabaseClient) {
-    console.warn('[Supabase] Client not initialized — using Data URL fallback.');
     return await fileToBase64(file);
   }
 
@@ -53,19 +52,28 @@ async function uploadToSupabase(file, bucket, folder) {
       .from(bucket)
       .upload(name, file, { cacheControl: '3600', upsert: false });
 
-    if (uploadResult.error) {
-      console.warn('[Supabase] Upload failed, falling back to Data URL. Error:', uploadResult.error.message);
-      return await fileToBase64(file);
+    if (!uploadResult.error) {
+      const urlResult = window.supabaseClient
+        .storage
+        .from(bucket)
+        .getPublicUrl(uploadResult.data.path);
+      return urlResult.data.publicUrl;
     }
-
-    const urlResult = window.supabaseClient
-      .storage
-      .from(bucket)
-      .getPublicUrl(uploadResult.data.path);
-
-    return urlResult.data.publicUrl;
   } catch (err) {
-    console.warn('[Supabase] Exception during upload, falling back to Data URL. Error:', err.message);
-    return await fileToBase64(file);
+    console.warn('[Supabase] Upload failed:', err.message);
   }
+
+  // Firebase Storage is a second cloud path for deployments where Supabase
+  // buckets are not configured yet.
+  if (window.storage && window.auth?.currentUser) {
+    try {
+      const firebaseRef = window.storage.ref(`${bucket}/${name}`);
+      await firebaseRef.put(file);
+      return await firebaseRef.getDownloadURL();
+    } catch (err) {
+      console.warn('[Firebase Storage] Upload failed:', err.message);
+    }
+  }
+
+  return await fileToBase64(file);
 }

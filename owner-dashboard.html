@@ -444,14 +444,23 @@
       pos => {
         pickedLat = pos.coords.latitude;
         pickedLng = pos.coords.longitude;
-        if (pickerMap) {
-          pickerMap.setView([pickedLat, pickedLng], 16);
+        if (window._pickerMap) {
+          window._pickerMap.setView([pickedLat, pickedLng], 16);
           // Fire click to place marker
-          pickerMap.fire('click', { latlng: { lat: pickedLat, lng: pickedLng } });
+          window._pickerMap.fire('click', { latlng: { lat: pickedLat, lng: pickedLng } });
+          window._pickerMap.invalidateSize();
         }
         showToast('Location set!','success');
       },
-      () => showToast('Could not get location.','error')
+      error => {
+        const messages = {
+          1: 'Location permission was denied. Allow location access and try again.',
+          2: 'Your location could not be determined. Search your address or click the map.',
+          3: 'Location lookup timed out. Search your address or click the map.',
+        };
+        showToast(messages[error.code] || 'Could not get location.', 'error', 5000);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
     );
   }
 

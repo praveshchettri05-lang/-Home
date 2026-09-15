@@ -246,8 +246,13 @@ function initAddListingPanel() {
 
 // ── PHOTO HANDLING ──
 function handlePhotoFiles(files) {
+  if (!files || files.length === 0) return;
   const maxPhotos = 10;
   const remaining = maxPhotos - existingPhotos.length - photoFiles.length;
+  if (remaining <= 0) {
+    showToast('Maximum 10 photos already selected.', 'info');
+    return;
+  }
   [...files].slice(0, remaining).forEach(file => {
     if (!file.type.startsWith('image/')) { showToast('Only image files allowed.', 'error'); return; }
     if (file.size > 5 * 1024 * 1024) { showToast(`${file.name} is too large (max 5MB).`, 'error'); return; }
@@ -255,6 +260,8 @@ function handlePhotoFiles(files) {
     photoFiles.push({ file, previewUrl: URL.createObjectURL(file), name: file.name });
   });
   renderPhotoPreview();
+  const input = document.getElementById('photo-input');
+  if (input) input.value = '';
   if (files.length > remaining) showToast(`Max 10 photos allowed. Only first ${remaining} added.`, 'info');
 }
 
@@ -277,7 +284,11 @@ function renderPhotoPreview() {
 }
 
 function removeExistingPhoto(idx) { existingPhotos.splice(idx, 1); renderPhotoPreview(); }
-function removeNewPhoto(idx)      { photoFiles.splice(idx, 1);     renderPhotoPreview(); }
+function removeNewPhoto(idx) {
+  const removed = photoFiles.splice(idx, 1)[0];
+  if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+  renderPhotoPreview();
+}
 
 // ── VIDEO HANDLING ──
 function handleVideoFile(file) {
@@ -297,9 +308,12 @@ function handleVideoFile(file) {
     </div>`;
 }
 function removeVideo() {
+  if (videoFile?.previewUrl) URL.revokeObjectURL(videoFile.previewUrl);
   videoFile = null;
   const prev = document.getElementById('video-preview');
   if (prev) prev.innerHTML = '';
+  const input = document.getElementById('video-input');
+  if (input) input.value = '';
 }
 
 // ── FORM SUBMIT ──
@@ -354,7 +368,11 @@ async function handleListingSubmit(e) {
       photoFiles.map(p => uploadToSupabase(p.file, SB_PHOTOS_BUCKET, folder).catch(() => null))
     );
     const failed = results.filter(r => !r).length;
-    if (failed > 0) showToast(`${failed} photo(s) failed to upload.`, 'error');
+    if (failed > 0) {
+      const reason = window.uploadToSupabaseLastError ? ` (${window.uploadToSupabaseLastError})` : '';
+      showToast(`${failed} photo(s) failed to upload${reason}. Check storage configuration and try again.`, 'error', 7000);
+      return;
+    }
     uploadedPhotos = [...uploadedPhotos, ...results.filter(Boolean)];
   }
 
@@ -363,7 +381,11 @@ async function handleListingSubmit(e) {
   if (videoFile && videoFile.file) {
     showToast('Uploading video…', 'info', 30000);
     videoUrl = await uploadToSupabase(videoFile.file, SB_VIDEOS_BUCKET, session.id).catch(() => null);
-    if (!videoUrl) showToast('Video upload failed. Listing will be saved without video.', 'error');
+    if (!videoUrl) {
+      const reason = window.uploadToSupabaseLastError ? ` (${window.uploadToSupabaseLastError})` : '';
+      showToast(`Video upload failed${reason}. Configure the listing-videos storage bucket and try again.`, 'error', 7000);
+      return;
+    }
   }
 
   const data = {
@@ -392,6 +414,8 @@ async function handleListingSubmit(e) {
   }
 
   // Reset state
+  photoFiles.forEach(photo => photo.previewUrl && URL.revokeObjectURL(photo.previewUrl));
+  if (videoFile?.previewUrl) URL.revokeObjectURL(videoFile.previewUrl);
   photoFiles = []; existingPhotos = []; videoFile = null; pickedLat = null; pickedLng = null;
   document.getElementById('add-listing-form')?.reset();
   const photoGrid = document.getElementById('photo-preview-grid');

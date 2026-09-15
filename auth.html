@@ -4,9 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Get Started — 2nd Home</title>
-  <link rel="stylesheet" href="css/main.css"/>
-  <link rel="stylesheet" href="css/components.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="css/main.css?v=2"/>
+  <link rel="stylesheet" href="css/components.css?v=2"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css?v=2"/>
   <style>
     /* ── Onboarding / Auth Page Extras ── */
     body { background: #1a0408; }
@@ -330,30 +330,6 @@
 </head>
 <body>
 
-<!-- Google Sign-in Mock Popup -->
-<div class="google-popup" id="google-popup">
-  <div class="google-popup-box">
-    <div class="g-logo">🔵</div>
-    <h3>Sign in with Google</h3>
-    <p>Choose an account to continue to 2nd Home</p>
-    <div class="google-account" onclick="completeGoogleLogin('Demo User', 'demo@gmail.com')">
-      <div class="google-avatar">D</div>
-      <div style="text-align:left;">
-        <div style="font-weight:600;color:#202124;">Demo User</div>
-        <div style="font-size:0.8rem;color:#5f6368;">demo@gmail.com</div>
-      </div>
-    </div>
-    <div class="google-account" onclick="completeGoogleLogin('Another User', 'another@gmail.com')">
-      <div class="google-avatar" style="background:#1a73e8;">A</div>
-      <div style="text-align:left;">
-        <div style="font-weight:600;color:#202124;">Another User</div>
-        <div style="font-size:0.8rem;color:#5f6368;">another@gmail.com</div>
-      </div>
-    </div>
-    <button onclick="closeGooglePopup()" style="width:100%;margin-top:16px;padding:10px;border:1px solid #dadce0;border-radius:8px;background:none;cursor:pointer;font-family:sans-serif;">Cancel</button>
-  </div>
-</div>
-
 <!-- Main Wrapper -->
 <div class="onboard-wrapper">
   <div class="step-card-wrap">
@@ -388,7 +364,7 @@
             <div class="step-bubble">3</div>
             <div class="step-txt">
               <h4>🔑 Sign In / Register</h4>
-              <p>Create an account with Google, phone OTP, or email & password — takes under 60 seconds.</p>
+              <p>Create an account with Google or email &amp; password — takes under 60 seconds.</p>
             </div>
           </div>
           <div class="howto-step">
@@ -542,62 +518,6 @@
     </div>
 
     <!-- ══════════════════════════════════
-         STEP 3b — Phone + OTP
-    ══════════════════════════════════ -->
-    <div id="step-phone" class="onboard-card" style="display:none;">
-      <div class="onboard-header">
-        <span class="onboard-logo">🏛️ 2nd Home</span>
-        <p class="step-label">Phone Verification</p>
-        <h2>📱 Enter Your Phone</h2>
-        <p>We'll send a 6-digit OTP via SMS.</p>
-      </div>
-      <div class="onboard-body">
-        <div id="phone-input-section">
-          <button class="back-btn" onclick="showStep('step-3')">← Back</button>
-          <div class="form-group">
-            <label>Phone Number<span class="required">*</span></label>
-            <div style="display:flex;gap:8px;">
-              <select class="form-control" style="width:90px;flex-shrink:0;">
-                <option>🇮🇳 +91</option>
-                <option>🇺🇸 +1</option>
-                <option>🇬🇧 +44</option>
-                <option>🇦🇪 +971</option>
-              </select>
-              <input type="tel" id="phone-number" class="form-control" placeholder="98765 43210" maxlength="10"/>
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Full Name<span class="required">*</span></label>
-            <input type="text" id="phone-name" class="form-control" placeholder="Your full name"/>
-          </div>
-          <button class="btn btn-primary btn-block btn-lg" onclick="sendOTP()">Send OTP →</button>
-        </div>
-
-        <div id="otp-section" style="display:none;">
-          <button class="back-btn" onclick="showSection('phone-input-section','otp-section')">← Change Number</button>
-          <p style="text-align:center;color:var(--walnut);margin-bottom:4px;">Enter the 6-digit OTP sent to</p>
-          <p style="text-align:center;font-weight:700;color:var(--burgundy);margin-bottom:0;" id="otp-phone-display"></p>
-          <div class="otp-boxes" id="otp-boxes">
-            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
-            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
-            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
-            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
-            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
-            <input class="otp-box" maxlength="1" type="text" pattern="[0-9]" inputmode="numeric"/>
-          </div>
-          <div style="background:rgba(201,168,76,0.12);border:1px solid var(--gold);border-radius:8px;padding:10px 14px;text-align:center;font-size:0.82rem;color:var(--saddle);margin-bottom:12px;">
-            🔑 Demo OTP: <strong>123456</strong>
-          </div>
-          <button class="btn btn-primary btn-block btn-lg" onclick="verifyOTP()">Verify & Continue →</button>
-          <div class="resend-row">
-            <span id="resend-timer">Resend OTP in <strong id="timer-count">30</strong>s</span>
-            <span id="resend-link" style="display:none;"><a onclick="resendOTP()">Resend OTP</a></span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════════════════════════════════
          STEP 3c — Email Form
     ══════════════════════════════════ -->
     <div id="step-email" class="onboard-card" style="display:none;">
@@ -708,14 +628,16 @@
 </div><!-- /onboard-wrapper -->
 
 <div class="toast-container"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
-<script src="js/firebase-init.js"></script>
-<script src="js/app.js"></script>
-<script src="js/map.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-init.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js?v=2"></script>
+<script src="js/firebase-init.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
+<script src="js/map.js?v=2"></script>
 <script>
   /* ============================================================
      ONBOARDING STATE
@@ -725,13 +647,6 @@
   let emailMode = 'register'; // 'register' | 'login'
   let pickerMapInited = false;
   let pickerMap = null, pickerMarker = null;
-  let timerInterval = null;
-
-  // If already logged in, redirect
-  if (Auth.isLoggedIn()) {
-    const s = Auth.getSession();
-    window.location.href = s.role + '-dashboard.html';
-  }
 
   // URL param: ?role=owner pre-selects role and skips to step 1
   const urlRole = new URLSearchParams(window.location.search).get('role');
@@ -739,11 +654,27 @@
     selectedRole = urlRole;
   }
 
+  // Fix: use onAuthStateChanged so we wait for Firebase auth to resolve
+  // before redirecting — prevents auth page flash for logged-in users
+  if (window.auth) {
+    window.auth.onAuthStateChanged(firebaseUser => {
+      if (firebaseUser) {
+        const s = Auth.getSession();
+        if (s) {
+          window.location.href = s.role + '-dashboard.html';
+        }
+      }
+    });
+  } else if (Auth.isLoggedIn()) {
+    const s = Auth.getSession();
+    window.location.href = s.role + '-dashboard.html';
+  }
+
   /* ── Step Navigation ── */
   function goStep(n) {
     const steps = ['step-0','step-1','step-2','step-3','step-4'];
     steps.forEach(id => { const el = document.getElementById(id); if(el) el.style.display='none'; });
-    document.querySelectorAll('[id^="step-phone"],[id^="step-email"]').forEach(el => el.style.display='none');
+    document.querySelectorAll('[id^="step-email"]').forEach(el => el.style.display='none');
     const target = document.getElementById('step-'+n);
     if (target) { target.style.display='block'; target.style.animation='cardIn 0.4s cubic-bezier(0.22,1,0.36,1)'; }
 
@@ -893,6 +824,7 @@
     const role = selectedRole || 'renter';
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
+      showToast('Opening Google sign-in…', 'info', 2000);
       const result = await firebase.auth().signInWithPopup(provider);
       const res = await Auth.handleProviderLogin(result.user, role, { loginMethod: 'google', lat: userLat, lng: userLng, address: userAddress });
       if (!res.ok) {
@@ -901,99 +833,8 @@
       }
       completeOnboarding(res.user.name);
     } catch (error) {
-      showToast(error.message, 'error');
+      showToast(error.message || 'Google sign-in failed. Please try again.', 'error');
     }
-  }
-
-  // We no longer need the fake popup or completeGoogleLogin
-  function closeGooglePopup() {
-    const p = document.getElementById('google-popup');
-    if (p) p.classList.remove('show');
-  }
-
-  /* ── Phone / OTP ── */
-  function goToPhone() { showStep('step-phone'); }
-
-  function sendOTP() {
-    const phone = document.getElementById('phone-number').value.trim();
-    const name  = document.getElementById('phone-name').value.trim();
-    if (!phone || phone.length < 10) { showToast('Enter a valid 10-digit phone number.','error'); return; }
-    if (!name) { showToast('Please enter your name.','error'); return; }
-    // Simulate OTP send
-    document.getElementById('otp-phone-display').textContent = '+91 ' + phone;
-    document.getElementById('phone-input-section').style.display='none';
-    document.getElementById('otp-section').style.display='block';
-    initOTPBoxes();
-    startResendTimer();
-    showToast('OTP sent to +91 ' + phone,'success');
-  }
-
-  function initOTPBoxes() {
-    const boxes = document.querySelectorAll('.otp-box');
-    boxes.forEach((box, i) => {
-      box.value = '';
-      box.addEventListener('input', () => {
-        if (box.value.length === 1 && boxes[i+1]) boxes[i+1].focus();
-        else if (!box.value && boxes[i-1]) boxes[i-1].focus();
-      });
-      box.addEventListener('keydown', e => {
-        if (e.key === 'Backspace' && !box.value && boxes[i-1]) { boxes[i-1].focus(); boxes[i-1].value=''; }
-      });
-      box.addEventListener('paste', e => {
-        const paste = (e.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'').slice(0,6);
-        [...paste].forEach((ch, idx) => { if(boxes[idx]) boxes[idx].value=ch; });
-        if (boxes[paste.length-1]) boxes[paste.length-1].focus();
-        e.preventDefault();
-      });
-    });
-    if (boxes[0]) boxes[0].focus();
-  }
-
-  function startResendTimer() {
-    let count = 30;
-    document.getElementById('resend-timer').style.display='inline';
-    document.getElementById('resend-link').style.display='none';
-    document.getElementById('timer-count').textContent = count;
-    clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
-      count--;
-      const el = document.getElementById('timer-count');
-      if (el) el.textContent = count;
-      if (count <= 0) {
-        clearInterval(timerInterval);
-        document.getElementById('resend-timer').style.display='none';
-        document.getElementById('resend-link').style.display='inline';
-      }
-    }, 1000);
-  }
-
-  function resendOTP() { showToast('OTP resent!','success'); startResendTimer(); }
-
-  async function verifyOTP() {
-    const otp = [...document.querySelectorAll('.otp-box')].map(b=>b.value).join('');
-    if (otp.length < 6) { showToast('Enter all 6 digits.','error'); return; }
-    if (otp !== '123456') { showToast('Invalid OTP. Use demo OTP: 123456','error'); return; }
-
-    const name  = document.getElementById('phone-name').value.trim();
-    const phone = document.getElementById('phone-number').value.trim();
-    const email = 'phone_' + phone + '@2nd Home.local';
-    const role  = selectedRole || 'renter';
-
-    let res;
-    if (role === 'renter') {
-      res = await Auth.registerRenter({ name, email, password:'otp_' + phone, phone, loginMethod: 'phone', lat: userLat, lng: userLng, address: userAddress });
-    } else {
-      res = await Auth.registerOwner({ name, email, password:'otp_' + phone, phone, loginMethod: 'phone', lat: userLat, lng: userLng, address: userAddress });
-    }
-
-    if (!res.ok) {
-      res = await Auth.login(email, 'otp_' + phone, role);
-      if (!res.ok) {
-        showToast(res.msg, 'error');
-        return;
-      }
-    }
-    completeOnboarding(name);
   }
 
   /* ── Email / Password ── */
@@ -1031,7 +872,7 @@
 
     if (emailMode === 'register') {
       const name    = document.getElementById('reg-name').value.trim();
-      const phone   = document.getElementById('reg-phone').value.trim();
+      const phone   = document.getElementById('reg-phone')?.value.trim() || '';
       const city    = document.getElementById('reg-city')?.value.trim() || '';
       const confirm = document.getElementById('reg-confirm').value;
       if (!name) { errEl.textContent = 'Full name is required.'; return; }

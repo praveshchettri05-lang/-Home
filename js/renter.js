@@ -156,7 +156,7 @@ function renderRenterMessages() {
         <span class="time">${fmtTime(msg.createdAt)}</span>
       </div>
       <div class="inquiry-meta">👤 Owner: ${sanitize(owner?.name || 'Owner')} &nbsp;·&nbsp; 📍 ${sanitize(listing?.city || '')}</div>
-      <div class="inquiry-preview">${msg.sender === 'renter' ? '🔵 You: ' : '🟢 Owner: '} ${sanitize(msg.text.substring(0,90))}…</div>
+      <div class="inquiry-preview">${msg.sender === 'renter' ? '🔵 You: ' : '🟢 Owner: '} ${sanitize((msg.text || '').substring(0,90))}…</div>
     </div>`;
   }).join('');
 }

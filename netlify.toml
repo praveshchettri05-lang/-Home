@@ -1,0 +1,43 @@
+# Netlify configuration for 2nd Home rental site
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "geolocation=(self)"
+
+[[redirects]]
+  from = "/auth"
+  to = "/auth.html"
+  status = 200
+
+[[redirects]]
+  from = "/listings"
+  to = "/listings.html"
+  status = 200
+
+[[redirects]]
+  from = "/owner-dashboard"
+  to = "/owner-dashboard.html"
+  status = 200
+
+[[redirects]]
+  from = "/renter-dashboard"
+  to = "/renter-dashboard.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200

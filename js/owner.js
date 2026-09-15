@@ -144,9 +144,19 @@ function renderManageCard(l) {
     <div class="manage-listing-actions">
       <a href="listing-detail.html?id=${l.id}" class="btn btn-outline btn-sm" target="_blank">👁 View</a>
       <button class="btn btn-primary btn-sm" onclick="editListing('${l.id}')">✏️ Edit</button>
-      <button class="btn btn-danger btn-sm" onclick="deleteListing('${l.id}')">🗑 Delete</button>
+      ${l.status === 'approved' ? `<button class="btn btn-outline btn-sm" style="color:var(--gold); border-color:var(--gold);" onclick="featureAd('${l.id}', ${l.featured})">⭐ ${l.featured ? 'Renew' : 'Feature'} Ad (₹199/mo)</button>` : ''}
+      <button class="btn btn-danger btn-sm" onclick="deleteListing('${l.id}')">🗑️ Delete</button>
     </div>
   </div>`;
+}
+
+function featureAd(id, isFeatured) {
+  if (confirm(`You are about to be redirected to the payment gateway to pay ₹199 to ${isFeatured ? 'renew your featured status' : 'feature this ad'} for 1 month. Proceed?`)) {
+    // Simulate successful payment and update locally
+    Listings.update(id, { featured: true });
+    showToast('Payment successful! Your ad is now featured.', 'success');
+    renderMyListings();
+  }
 }
 
 // ── EDIT ──
@@ -241,7 +251,8 @@ function handlePhotoFiles(files) {
   [...files].slice(0, remaining).forEach(file => {
     if (!file.type.startsWith('image/')) { showToast('Only image files allowed.', 'error'); return; }
     if (file.size > 5 * 1024 * 1024) { showToast(`${file.name} is too large (max 5MB).`, 'error'); return; }
-    photoFiles.push({ url: URL.createObjectURL(file), name: file.name });
+    // Store the File object + a local preview URL
+    photoFiles.push({ file, previewUrl: URL.createObjectURL(file), name: file.name });
   });
   renderPhotoPreview();
   if (files.length > remaining) showToast(`Max 10 photos allowed. Only first ${remaining} added.`, 'info');
@@ -259,7 +270,7 @@ function renderPhotoPreview() {
       </div>`),
     ...photoFiles.map((f, i) => `
       <div class="photo-preview-item">
-        <img src="${sanitize(f.url)}" alt="${sanitize(f.name)}">
+        <img src="${sanitize(f.previewUrl)}" alt="${sanitize(f.name)}">
         <button class="remove-photo" onclick="removeNewPhoto(${i})" title="Remove">✕</button>
       </div>`),
   ].join('');
@@ -273,12 +284,12 @@ function handleVideoFile(file) {
   if (!file) return;
   if (!file.type.startsWith('video/')) { showToast('Only video files allowed.', 'error'); return; }
   if (file.size > 100 * 1024 * 1024)  { showToast('Video too large (max 100MB).', 'error'); return; }
-  const url = URL.createObjectURL(file);
-  videoFile  = { url, name: file.name };
+  const previewUrl = URL.createObjectURL(file);
+  videoFile  = { file, previewUrl, name: file.name };
   const prev = document.getElementById('video-preview');
   if (prev) prev.innerHTML = `
     <video controls style="width:100%;max-height:220px;border-radius:8px;margin-top:12px;background:#000;">
-      <source src="${sanitize(url)}" type="${file.type}">
+      <source src="${sanitize(previewUrl)}" type="${file.type}">
     </video>
     <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.82rem;color:var(--gray-dk);">
       🎬 ${sanitize(file.name)} (${(file.size/1024/1024).toFixed(1)} MB)
@@ -292,7 +303,7 @@ function removeVideo() {
 }
 
 // ── FORM SUBMIT ──
-function handleListingSubmit(e) {
+async function handleListingSubmit(e) {
   e.preventDefault();
 
   const getVal = id => (document.getElementById(id)?.value || '').trim();
@@ -332,9 +343,29 @@ function handleListingSubmit(e) {
   }
 
   const amenities = [...document.querySelectorAll('.amenity-check-input:checked')].map(c => c.value);
-  const allPhotos = [...existingPhotos, ...photoFiles.map(f => f.url)];
+  const session   = Auth.getSession();
 
-  const session = Auth.getSession();
+  // ── Upload new photos to Supabase Storage ──
+  let uploadedPhotos = [...existingPhotos]; // keep already-stored URLs
+  if (photoFiles.length > 0) {
+    showToast(`Uploading ${photoFiles.length} photo(s)…`, 'info', 15000);
+    const folder = session.id;
+    const results = await Promise.all(
+      photoFiles.map(p => uploadToSupabase(p.file, SB_PHOTOS_BUCKET, folder))
+    );
+    const failed = results.filter(r => !r).length;
+    if (failed > 0) showToast(`${failed} photo(s) failed to upload.`, 'error');
+    uploadedPhotos = [...uploadedPhotos, ...results.filter(Boolean)];
+  }
+
+  // ── Upload video to Supabase Storage ──
+  let videoUrl = null;
+  if (videoFile && videoFile.file) {
+    showToast('Uploading video…', 'info', 30000);
+    videoUrl = await uploadToSupabase(videoFile.file, SB_VIDEOS_BUCKET, session.id);
+    if (!videoUrl) showToast('Video upload failed. Listing will be saved without video.', 'error');
+  }
+
   const data = {
     ownerId: session.id,
     title, type, city, address,
@@ -345,8 +376,8 @@ function handleListingSubmit(e) {
     deposit, bills, minDuration: minDur,
     availableFrom: availFrom,
     amenities,
-    photos: allPhotos,
-    video: videoFile?.url || null,
+    photos: uploadedPhotos,
+    video: videoUrl,
     lat: pickedLat, lng: pickedLng,
     available: avail,
   };
@@ -362,10 +393,13 @@ function handleListingSubmit(e) {
 
   // Reset state
   photoFiles = []; existingPhotos = []; videoFile = null; pickedLat = null; pickedLng = null;
-  document.getElementById('add-listing-form').reset();
-  document.getElementById('photo-preview-grid').innerHTML = '';
-  document.getElementById('video-preview').innerHTML      = '';
-  document.getElementById('desc-count').textContent       = '0';
+  document.getElementById('add-listing-form')?.reset();
+  const photoGrid = document.getElementById('photo-preview-grid');
+  if (photoGrid) photoGrid.innerHTML = '';
+  const videoPrev = document.getElementById('video-preview');
+  if (videoPrev) videoPrev.innerHTML = '';
+  const descCnt = document.getElementById('desc-count');
+  if (descCnt) descCnt.textContent = '0';
   document.querySelectorAll('.amenity-check').forEach(el => el.classList.remove('checked'));
   showPanel('listings');
 }

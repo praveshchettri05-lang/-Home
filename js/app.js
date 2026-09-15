@@ -21,7 +21,16 @@ const DB = {
 // UTILITY FUNCTIONS
 // ═══════════════════════════════════════
 const getDB   = key => JSON.parse(localStorage.getItem(key) || '[]');
-const setDB   = (key, val) => localStorage.setItem(key, JSON.stringify(val));
+const setDB   = (key, val) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(val));
+  } catch (e) {
+    console.error('LocalStorage error:', e);
+    if (e.name === 'QuotaExceededError') {
+      alert('Local storage is full! The file you uploaded might be too large for this demo. Try uploading a smaller image or clearing data.');
+    }
+  }
+};
 const genId   = () => '_' + Math.random().toString(36).substr(2, 9);
 const now     = () => new Date().toISOString();
 const fmt     = (iso) => new Date(iso).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
@@ -47,6 +56,13 @@ function cloudSet(collection, id, data) {
 }
 
 function cloudDelete(collection, id) {
+  // Track locally to prevent Firebase from re-syncing undeleted demo items
+  const deletedIds = JSON.parse(localStorage.getItem('re_deleted_ids') || '[]');
+  if (!deletedIds.includes(id)) {
+    deletedIds.push(id);
+    localStorage.setItem('re_deleted_ids', JSON.stringify(deletedIds));
+  }
+
   if (window.db) {
     window.db.collection(collection).doc(id).delete().catch(console.error);
   }
@@ -57,7 +73,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.db) {
     const syncCollection = (name, localKey) => {
       window.db.collection(name).onSnapshot(snap => {
-        const list = snap.docs.map(doc => doc.data());
+        let list = snap.docs.map(doc => doc.data());
+        
+        // Filter out items that were deleted locally
+        const deletedIds = JSON.parse(localStorage.getItem('re_deleted_ids') || '[]');
+        if (deletedIds.length > 0) {
+          list = list.filter(item => !deletedIds.includes(item.id));
+        }
+        
         setDB(localKey, list);
         // Dispatch event so UI can auto-refresh if it wants
         window.dispatchEvent(new CustomEvent('cloud_update'));
@@ -143,6 +166,14 @@ const Auth = {
       const cred = await window.auth.signInWithEmailAndPassword(email, password);
       return await this.handleProviderLogin(cred.user, role, { loginMethod: 'email' });
     } catch (err) {
+      // Fallback for Demo Accounts (since they aren't in Firebase Auth)
+      const list = getDB(role === 'owner' ? DB.OWNERS : DB.USERS);
+      const demoUser = list.find(u => u.email === email && u.password === password);
+      if (demoUser) {
+        const session = { id: demoUser.id, name: demoUser.name, email: demoUser.email, role };
+        setDB(DB.SESSION, session);
+        return { ok: true, user: demoUser };
+      }
       return { ok: false, msg: err.message };
     }
   },
@@ -605,6 +636,7 @@ function resetAllData() {
   if (!confirm('⚠️ This will delete ALL data including listings, users, bookings, and messages. Continue?')) return;
   Object.values(DB).forEach(key => localStorage.removeItem(key));
   localStorage.removeItem('re_seeded');
+  localStorage.removeItem('re_deleted_ids');
   showToast('All data reset. Page will reload…', 'info');
   setTimeout(() => location.reload(), 1500);
 }
@@ -671,4 +703,33 @@ document.addEventListener('DOMContentLoaded', () => {
   seedDemoData();
   initNavbar();
   initScrollTop();
+});
+
+// ---------------------------------------
+// CUSTOMER SUPPORT WIDGET
+// ---------------------------------------
+function initSupportWidget() {
+  const container = document.createElement('div');
+  container.innerHTML = `
+    <div class="support-widget-popup" id="supportPopup">
+      <div class="support-widget-header">
+        🎧 Customer Care & Support
+      </div>
+      <div class="support-widget-body">
+        <p>Need help booking a room or listing your property? Our team is here to assist you through the entire process!</p>
+        <div class="support-widget-numbers">
+          <a href="tel:7864043197">📞 +91 7864043197</a>
+          <a href="tel:6295727553">📞 +91 6295727553</a>
+        </div>
+      </div>
+    </div>
+    <div class="support-widget-btn" onclick="document.getElementById('supportPopup').style.display = document.getElementById('supportPopup').style.display === 'flex' ? 'none' : 'flex'">
+      💬
+    </div>
+  `;
+  document.body.appendChild(container);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initSupportWidget();
 });

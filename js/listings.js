@@ -133,8 +133,11 @@ function prefillFromUrl() {
   // Type checkboxes
   if (params.type) {
     document.querySelectorAll('.filter-type-check').forEach(c => {
-      c.checked = (c.value === params.type || c.value === 'all' && !params.type);
+      c.checked = (c.value === params.type);
     });
+  } else {
+    const allCheck = document.querySelector('.filter-type-check[value="all"]');
+    if (allCheck) allCheck.checked = true;
   }
   if (params.city) {
     const el = document.getElementById('filter-city');

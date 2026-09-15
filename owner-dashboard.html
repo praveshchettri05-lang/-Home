@@ -4,10 +4,10 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Owner Dashboard — 2nd Home</title>
-  <link rel="stylesheet" href="css/main.css"/>
-  <link rel="stylesheet" href="css/components.css"/>
-  <link rel="stylesheet" href="css/dashboard.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="css/main.css?v=2"/>
+  <link rel="stylesheet" href="css/components.css?v=2"/>
+  <link rel="stylesheet" href="css/dashboard.css?v=2"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css?v=2"/>
 </head>
 <body>
 
@@ -47,6 +47,7 @@
 
       <div class="dash-nav-section">Account</div>
       <div class="dash-nav-item" data-panel="profile"><span class="nav-icon">👤</span> My Profile</div>
+      <div class="dash-nav-item" data-panel="billing"><span class="nav-icon">💎</span> Billing & Plan</div>
       <div class="dash-logout" id="logout-btn"><span>🚪</span> Logout</div>
     </aside>
 
@@ -291,6 +292,13 @@
           </div>
 
           <!-- Submit -->
+          <div class="form-section" style="background:var(--ivory); border-left:4px solid var(--gold);">
+            <h4 style="margin:0 0 8px 0; color:var(--burgundy);">🤝 Partnership Terms</h4>
+            <p style="font-size:0.9rem; color:var(--gray-dk); margin:0;">
+              By listing your property, you agree to provide us with an <strong>8-10% commission</strong> on every month's rent. 
+              <br>Alternatively, you may purchase our <strong>Premium Owner Subscription</strong> to waive this commission.
+            </p>
+          </div>
           <div style="display:flex;gap:12px;flex-wrap:wrap;">
             <button type="submit" class="btn btn-primary btn-lg">🚀 Submit Listing for Approval</button>
             <button type="button" class="btn btn-outline btn-lg" onclick="showPanel('listings')">Cancel</button>
@@ -329,6 +337,57 @@
         </div>
       </div>
 
+      <!-- ══ PANEL: Billing & Plan ══ -->
+      <div class="dash-panel" id="panel-billing">
+        <div class="dash-panel-header">
+          <div><h2>💎 Billing & Partnership Plan</h2><p>Manage your revenue sharing and subscriptions</p></div>
+        </div>
+        
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:24px;">
+          <!-- Standard Plan -->
+          <div class="form-section" style="border-top: 4px solid var(--gray-dk); display:flex; flex-direction:column;">
+            <h3 style="margin-top:0;">Standard Partner</h3>
+            <p style="color:var(--gray-dk);font-size:0.9rem; flex-grow:1;">Pay-as-you-go model. We deduct a small commission only when you successfully rent out your property.</p>
+            <div style="font-size:2rem;font-weight:700;color:var(--burgundy);margin:16px 0;">10%<span style="font-size:1rem;color:var(--gray-dk);font-weight:400;"> / month</span></div>
+            <ul style="padding-left:20px;color:var(--gray-dk);font-size:0.9rem;margin-bottom:24px;">
+              <li>Free property listing</li>
+              <li>Basic customer support</li>
+              <li>Pay only on successful rent</li>
+            </ul>
+            <button class="btn btn-outline" disabled>Current Plan</button>
+          </div>
+
+          <!-- Premium Plan -->
+          <div class="form-section" style="border-top: 4px solid var(--gold); background:var(--ivory); display:flex; flex-direction:column; position:relative;">
+            <div style="position:absolute; top:-12px; right:16px; background:var(--gold); color:var(--burgundy-dk); padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; box-shadow:0 4px 12px rgba(0,0,0,0.15);">RECOMMENDED</div>
+            <h3 style="margin-top:0;">Premium Owner <span style="font-size:1.2rem;">👑</span></h3>
+            <p style="color:var(--gray-dk);font-size:0.9rem; flex-grow:1;">Keep 100% of your rent. Enjoy priority listing placement and zero commission fees.</p>
+            <div style="font-size:2rem;font-weight:700;color:var(--burgundy);margin:16px 0;">₹2,999<span style="font-size:1rem;color:var(--gray-dk);font-weight:400;"> / year</span></div>
+            <ul style="padding-left:20px;color:var(--gray-dk);font-size:0.9rem;margin-bottom:24px;">
+              <li><strong>0% Commission</strong> on rent</li>
+              <li>Priority featured placement ⭐</li>
+              <li>Premium 24/7 support</li>
+              <li>Verified Owner Badge ✓</li>
+            </ul>
+            <button class="btn btn-primary" onclick="alert('Redirecting to payment gateway to upgrade to Premium...');">Upgrade to Premium</button>
+          </div>
+        </div>
+        
+        <!-- Payouts Table -->
+        <div class="form-section" style="margin-top:24px;">
+          <h3>📊 Commission Tracking</h3>
+          <p style="color:var(--gray-dk);font-size:0.9rem;">View your recent rent collection and platform commissions.</p>
+          <table class="data-table" style="margin-top:16px;">
+            <thead>
+              <tr><th>Month</th><th>Property</th><th>Rent Amount</th><th>Commission (10%)</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="5" style="text-align:center;color:var(--gray-dk);padding:24px;">No commission history yet. Start receiving bookings!</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -352,15 +411,17 @@
 
 <div class="toast-container"></div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
-<script src="js/firebase-init.js"></script>
-<script src="js/app.js"></script>
-<script src="js/map.js"></script>
-<script src="js/owner.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-init.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js?v=2"></script>
+<script src="js/firebase-init.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
+<script src="js/map.js?v=2"></script>
+<script src="js/owner.js?v=2"></script>
 <script>
   // Amenity checkbox toggle visual
   document.querySelectorAll('.amenity-check-input').forEach(cb => {

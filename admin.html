@@ -48,23 +48,15 @@
     <div class="shield">🛡️</div>
     <h2>Admin Portal</h2>
     <p>Restricted access — 2nd Home administration only</p>
-    <div class="admin-cred-hint" id="otp-hint" style="display:none;">
-      ℹ️ For demo purposes, the OTP is <strong>123456</strong>.
-    </div>
-    <div class="form-group">
-      <label>Admin Email<span class="required">*</span></label>
-      <input type="email" class="form-control" id="admin-email" value="praveshchettri05@gmail.com" readonly/>
-    </div>
     
-    <div class="form-group" id="otp-group" style="display:none;">
-      <label>Enter OTP<span class="required">*</span></label>
-      <input type="text" class="form-control" id="admin-otp" placeholder="6-digit code"/>
+    <div class="form-group">
+      <label>Admin Password<span class="required">*</span></label>
+      <input type="password" class="form-control" id="admin-password" placeholder="Enter password..."/>
     </div>
     
     <div class="form-error" id="admin-login-error" style="margin-bottom:12px;"></div>
     
-    <button class="btn btn-primary btn-block btn-lg" id="btn-send-otp" onclick="sendAdminOTP()">📧 Send OTP to Email</button>
-    <button class="btn btn-success btn-block btn-lg" id="btn-verify-otp" style="display:none;" onclick="verifyAdminOTP()">🔐 Verify & Login</button>
+    <button class="btn btn-primary btn-block btn-lg" id="btn-login-admin" onclick="loginAdmin()">🔐 Login</button>
 
     <div style="text-align:center;margin-top:24px;">
       <a href="index.html" style="font-size:0.82rem;color:var(--gray-dk);">← Back to Home</a>
@@ -218,49 +210,24 @@
     }
   }
 
-  /* ── Admin OTP Login ── */
-  let currentOTP = null;
-
-  async function sendAdminOTP() {
-    const email = document.getElementById('admin-email').value;
+  /* ── Admin Password Login ── */
+  function loginAdmin() {
+    const password = document.getElementById('admin-password').value.trim();
     const err = document.getElementById('admin-login-error');
     err.textContent = '';
 
-    if (email.toLowerCase() !== Auth.ADMIN_EMAIL.toLowerCase()) {
-      err.textContent = 'Access Denied: You are not the site administrator.';
+    if (!password) {
+      err.textContent = 'Please enter the password.';
       return;
     }
 
-    // Generate a random 6-digit OTP
-    currentOTP = Math.floor(100000 + Math.random() * 900000).toString();
-
-    document.getElementById('btn-send-otp').style.display = 'none';
-    document.getElementById('otp-group').style.display = 'block';
-    document.getElementById('btn-verify-otp').style.display = 'block';
-    document.getElementById('otp-hint').style.display = 'block';
-    document.getElementById('otp-hint').innerHTML = `ℹ️ Demo OTP (since no email server): <strong>${currentOTP}</strong>`;
-
-    showToast('OTP generated! (shown above for demo)', 'info');
-  }
-
-  async function verifyAdminOTP() {
-    const otp = document.getElementById('admin-otp').value.trim();
-    const email = document.getElementById('admin-email').value;
-    const err = document.getElementById('admin-login-error');
-    err.textContent = '';
-
-    if (!otp) {
-      err.textContent = 'Please enter the OTP.';
-      return;
-    }
-
-    if (otp !== currentOTP) {
-      err.textContent = 'Invalid OTP. Please try again.';
+    if (password !== 'Admin@122') {
+      err.textContent = 'Invalid password. Access denied.';
       return;
     }
 
     // Success! Log them in
-    const session = { id: 'admin', name: 'System Admin', email, role: 'admin' };
+    const session = { id: 'admin', name: 'System Admin', email: Auth.ADMIN_EMAIL, role: 'admin' };
     localStorage.setItem('re_session', JSON.stringify(session));
     showToast('Welcome, Administrator! 🎉', 'success');
     checkAdmin();

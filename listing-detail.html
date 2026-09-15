@@ -4,9 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Property Detail — 2nd Home</title>
-  <link rel="stylesheet" href="css/main.css"/>
-  <link rel="stylesheet" href="css/components.css"/>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="css/main.css?v=2"/>
+  <link rel="stylesheet" href="css/components.css?v=2"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css?v=2"/>
 </head>
 <body>
 
@@ -100,8 +100,51 @@
   </div>
 </div>
 
+<!-- INSPECTION MODAL -->
+<div class="modal-overlay" id="inspection-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🔍 Book Property Inspection</h3>
+      <button class="modal-close" onclick="closeModal('inspection-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="inspection-form">
+        <div class="form-group">
+          <label>Service Type<span class="required">*</span></label>
+          <select class="form-control" id="insp-service" required>
+            <option value="199">Basic Inspection (₹199) - Assisted site visit</option>
+            <option value="499">Premium Assistance (₹499) - Visit + Negotiation support</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Preferred Date<span class="required">*</span></label>
+            <input type="date" class="form-control" id="insp-date" required/>
+          </div>
+          <div class="form-group">
+            <label>Preferred Time<span class="required">*</span></label>
+            <input type="time" class="form-control" id="insp-time" required/>
+          </div>
+        </div>
+        <div class="payment-section" style="background:var(--cream);padding:16px;border-radius:8px;margin-bottom:16px;text-align:center;border:1px solid var(--gold);">
+          <h4 style="color:var(--burgundy);margin-bottom:8px;">UPI Payment</h4>
+          <p style="font-size:0.85rem;color:var(--gray-dk);margin-bottom:12px;">Scan QR or click below to pay <strong id="insp-amt-display">₹199</strong></p>
+          <img id="insp-qr" src="" alt="UPI QR Code" style="width:150px;height:150px;border-radius:8px;margin:0 auto 12px;display:block;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.1);"/>
+          <a id="insp-upi-link" href="#" class="btn btn-outline btn-block" style="margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px;">
+            <span style="font-size:1.2rem;">📱</span> Pay via UPI App
+          </a>
+          <div class="form-group" style="text-align:left;margin-bottom:0;">
+            <label>Transaction ID / UTR Number<span class="required">*</span></label>
+            <input type="text" class="form-control" id="insp-utr" placeholder="Enter 12-digit UTR from your payment app" required pattern="[a-zA-Z0-9]{10,12}"/>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" style="background:var(--gold);border-color:var(--gold);color:var(--burgundy);">Confirm Appointment</button>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- CONTACT MODAL -->
-<div class="modal-overlay" id="contact-modal">
   <div class="modal">
     <div class="modal-header">
       <h3>💬 Contact Owner</h3>
@@ -120,14 +163,16 @@
 <button class="scroll-top" title="Back to top">↑</button>
 <div class="toast-container"></div>
 
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
-<script src="js/firebase-init.js"></script>
-<script src="js/app.js"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="js/map.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-init.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js?v=2"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js?v=2"></script>
+<script src="js/firebase-init.js?v=2"></script>
+<script src="js/app.js?v=2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js?v=2"></script>
+<script src="js/map.js?v=2"></script>
 <script>
   let currentListing = null;
   let lightboxPhotos = [];
@@ -277,6 +322,7 @@
             <div style="display:flex;flex-direction:column;gap:10px;">
               ${isRenter ? `
                 <button class="btn btn-primary btn-block btn-lg" onclick="openModal('book-modal')">📅 Request Booking</button>
+                <button class="btn btn-block btn-lg" style="background:var(--gold);color:var(--burgundy);border:none;font-weight:700;" onclick="openInspectionModal()">🔍 Book Inspection (₹199+)</button>
                 <button class="btn btn-outline btn-block" onclick="openContactModal()">💬 Message Owner</button>
                 <button class="wishlist-btn-large ${isFav ? 'active' : ''}" onclick="toggleFavDetail()" style="
                   display:flex;align-items:center;justify-content:center;gap:8px;
@@ -310,6 +356,7 @@
     // Setup contact modal
     if (isRenter) {
       setupContactModal(l, session);
+      setupInspectionModal(l, session);
     }
   }
 
@@ -435,6 +482,66 @@
     const total = price * units;
     if (tot) tot.textContent = `₹${Number(total).toLocaleString('en-IN')} (${units} ${dur === 'daily' ? 'days' : dur === 'weekly' ? 'weeks' : 'months'} × ₹${price.toLocaleString('en-IN')})`;
     if (prev) prev.style.display = 'block';
+  }
+
+  // ── Inspection Modal ──
+  const UPI_ID = 'your_upi_id@upi'; // Replace with real UPI ID
+  const UPI_NAME = '2nd Home Services';
+
+  function setupInspectionModal(l, session) {
+    const form = document.getElementById('inspection-form');
+    if (!form) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('insp-date').min = today;
+
+    document.getElementById('insp-service').addEventListener('change', updateInspectionPrice);
+    updateInspectionPrice();
+
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      if (!session || session.role !== 'renter') { showToast('Please login as renter to book.', 'error'); return; }
+
+      const date = document.getElementById('insp-date').value;
+      const time = document.getElementById('insp-time').value;
+      const serviceSelect = document.getElementById('insp-service');
+      const amount = serviceSelect.value;
+      const serviceText = serviceSelect.options[serviceSelect.selectedIndex].text;
+      const utr = document.getElementById('insp-utr').value.trim();
+
+      if (!date || !time || !utr) { showToast('Please fill all fields.', 'error'); return; }
+
+      Bookings.create({
+        type: 'inspection',
+        listingId: l.id, ownerId: l.ownerId, renterId: session.id,
+        renterName: session.name, renterEmail: session.email,
+        renterPhone: Auth.getUserById(session.id)?.phone || '',
+        listingTitle: l.title,
+        inspectionDate: date, inspectionTime: time,
+        serviceType: serviceText, amount: amount, utr: utr,
+        status: 'pending_verification'
+      });
+
+      closeModal('inspection-modal');
+      showToast('Inspection request submitted! We will verify the payment and confirm shortly.', 'success', 5000);
+    };
+  }
+
+  function updateInspectionPrice() {
+    const amount = document.getElementById('insp-service').value;
+    document.getElementById('insp-amt-display').textContent = '₹' + amount;
+
+    const upiString = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(UPI_NAME)}&am=${amount}&cu=INR&tn=Property+Inspection`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiString)}`;
+
+    document.getElementById('insp-qr').src = qrUrl;
+    document.getElementById('insp-upi-link').href = upiString;
+  }
+
+  function openInspectionModal() {
+    const session = Auth.getSession();
+    if (!session || session.role !== 'renter') { showToast('Please login as renter to book an inspection.', 'error'); return; }
+    openModal('inspection-modal');
   }
 
   // ── Contact Modal ──

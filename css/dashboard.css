@@ -274,6 +274,18 @@
 
 /* ── Map (add listing) ── */
 #owner-map { height: 300px; border-radius: var(--radius-sm); border: 1px solid var(--gray-mid); z-index: 1; }
+.address-autocomplete { position: relative; }
+.address-suggestions {
+  position: absolute; left: 0; right: 0; top: calc(100% + 2px); z-index: 20;
+  background: #fff; border: 1px solid var(--gray-mid); border-radius: 6px;
+  box-shadow: 0 8px 22px rgba(0,0,0,.16); max-height: 240px; overflow-y: auto;
+}
+.address-suggestions:empty { display: none; }
+.address-suggestion {
+  display: block; width: 100%; border: 0; background: #fff; text-align: left;
+  padding: 10px 12px; cursor: pointer; color: var(--gray-dk); font-size: .85rem;
+}
+.address-suggestion:hover, .address-suggestion:focus { background: var(--ivory); color: var(--burgundy); }
 .map-coords { font-size: 0.8rem; color: var(--gray-dk); margin-top: 8px; }
 
 /* ── Admin specific ── */

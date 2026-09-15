@@ -51,7 +51,9 @@ const sanitize = str => {
 
 function cloudSet(collection, id, data) {
   if (window.db) {
-    window.db.collection(collection).doc(id).set(data).catch(console.error);
+    window.db.collection(collection).doc(id).set(data).catch(err => {
+      console.warn(`[Cloud sync] Could not save ${collection}/${id}; local data is retained.`, err.message);
+    });
   }
 }
 
@@ -64,7 +66,9 @@ function cloudDelete(collection, id) {
   }
 
   if (window.db) {
-    window.db.collection(collection).doc(id).delete().catch(console.error);
+    window.db.collection(collection).doc(id).delete().catch(err => {
+      console.warn(`[Cloud sync] Could not delete ${collection}/${id}; local data is retained.`, err.message);
+    });
   }
 }
 
@@ -84,6 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setDB(localKey, list);
         // Dispatch event so UI can auto-refresh if it wants
         window.dispatchEvent(new CustomEvent('cloud_update'));
+      }, err => {
+        console.warn(`[Cloud sync] ${name} is unavailable; using local data.`, err.message);
       });
     };
     syncCollection('users', DB.USERS);

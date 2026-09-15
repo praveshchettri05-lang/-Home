@@ -51,13 +51,14 @@
     
     <div class="form-group">
       <label>Admin Password<span class="required">*</span></label>
-      <input type="password" class="form-control" id="admin-password" placeholder="Enter password..."/>
+      <form id="admin-login-form">
+        <input type="password" class="form-control" id="admin-password" placeholder="Enter password..." autocomplete="current-password" required/>
+        <button class="btn btn-primary btn-block btn-lg" type="submit" style="margin-top:16px;">🔐 Login</button>
+      </form>
     </div>
     
     <div class="form-error" id="admin-login-error" style="margin-bottom:12px;"></div>
     
-    <button class="btn btn-primary btn-block btn-lg" id="btn-login-admin" onclick="loginAdmin()">🔐 Login</button>
-
     <div style="text-align:center;margin-top:24px;">
       <a href="index.html" style="font-size:0.82rem;color:var(--gray-dk);">← Back to Home</a>
     </div>
@@ -71,7 +72,7 @@
     <a href="index.html" class="nav-logo"><span class="logo-icon">🛡️</span>Admin<span>2nd Home</span></a>
     <ul class="nav-links">
       <li><a href="listings.html" target="_blank">View Site</a></li>
-      <li><button onclick="Auth.logout()" class="btn btn-outline btn-sm" style="color:rgba(255,255,255,0.7);">Logout</button></li>
+      <li><button onclick="logoutAdmin()" class="btn btn-outline btn-sm" style="color:rgba(255,255,255,0.7);">Logout</button></li>
     </ul>
   </div>
 </nav>
@@ -188,51 +189,9 @@
 
 <div class="toast-container"></div>
 
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
-<script src="js/firebase-init.js"></script>
 <script src="js/app.js"></script>
 <script src="js/admin.js"></script>
 <script>
-  /* ── INIT ── */
-  document.addEventListener('DOMContentLoaded', () => {
-    // admin.js DOMContentLoaded also fires — it will handle showing dashboard if already logged in
-    // Nothing extra needed here since admin.js does the auth check
-  });
-
-  function checkAdmin() {
-    if (Auth.isAdmin()) {
-      document.getElementById('admin-login-screen').style.display = 'none';
-      document.getElementById('admin-dashboard').style.display = 'block';
-      _initAdminPanel();
-    }
-  }
-
-  /* ── Admin Password Login ── */
-  function loginAdmin() {
-    const password = document.getElementById('admin-password').value.trim();
-    const err = document.getElementById('admin-login-error');
-    err.textContent = '';
-
-    if (!password) {
-      err.textContent = 'Please enter the password.';
-      return;
-    }
-
-    if (password !== 'Admin@122') {
-      err.textContent = 'Invalid password. Access denied.';
-      return;
-    }
-
-    // Success! Log them in
-    const session = { id: 'admin', name: 'System Admin', email: Auth.ADMIN_EMAIL, role: 'admin' };
-    localStorage.setItem('re_session', JSON.stringify(session));
-    showToast('Welcome, Administrator! 🎉', 'success');
-    checkAdmin();
-  }
-
   /* ── Pending Quick View ── */
   function renderPendingQuick() {
     const pending = Listings.getAll().filter(l=>l.status==='pending');
@@ -277,4 +236,3 @@
 </script>
 </body>
 </html>
-

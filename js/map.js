@@ -77,8 +77,8 @@ function initPickerMap(initialLat, initialLng, onPick) {
       el.innerHTML = '';
     }
 
-    const defLat = initialLat || 20.5937;
-    const defLng = initialLng || 78.9629;
+    const defLat = Number.isFinite(initialLat) ? initialLat : 20.5937;
+    const defLng = Number.isFinite(initialLng) ? initialLng : 78.9629;
 
     const map = L.map('owner-map', { zoomControl: true });
     window._pickerMap = map;
@@ -102,14 +102,17 @@ function initPickerMap(initialLat, initialLng, onPick) {
       if (onPick) onPick(lat, lng);
     }
 
-    if (initialLat && initialLng) {
+    if (Number.isFinite(initialLat) && Number.isFinite(initialLng)) {
       map.setView([initialLat, initialLng], 15);
       placeMarker(initialLat, initialLng);
     } else {
       map.setView([defLat, defLng], 5);
     }
 
-    map.on('click', e => placeMarker(e.latlng.lat, e.latlng.lng));
+    map.on('click', e => {
+      placeMarker(e.latlng.lat, e.latlng.lng);
+      reverseGeocodeAddress(e.latlng.lat, e.latlng.lng);
+    });
 
     // City search
     const searchInput = document.getElementById('map-city-search');
@@ -119,6 +122,20 @@ function initPickerMap(initialLat, initialLng, onPick) {
       searchBtn.addEventListener('click', doSearch);
       searchInput?.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
     }
+
+    async function reverseGeocodeAddress(lat, lng) {
+      const input = document.getElementById('listing-address');
+      if (!input || input.value.trim()) return;
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2`);
+        if (!res.ok) return;
+        const result = await res.json();
+        if (result.display_name && !input.value.trim()) input.value = result.display_name;
+      } catch (err) {
+        console.warn('[Address reverse geocode]', err.message);
+      }
+    }
+    setupAddressAutocomplete('listing-address', map, placeMarker);
   });
 }
 
@@ -170,4 +187,49 @@ async function searchCity(city, map, onFound) {
   } catch(e) {
     if (typeof showToast === 'function') showToast('Could not search. Check your internet.', 'error');
   }
+}
+
+function setupAddressAutocomplete(inputId, map, onFound) {
+  const input = document.getElementById(inputId);
+  const suggestions = document.getElementById('address-suggestions');
+  if (!input || !suggestions || input.dataset.autocompleteReady) return;
+  input.dataset.autocompleteReady = 'true';
+  let timer;
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const query = input.value.trim();
+    if (query.length < 3) {
+      suggestions.innerHTML = '';
+      return;
+    }
+    timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query + ', India')}&format=jsonv2&addressdetails=1&limit=6`);
+        if (!res.ok) throw new Error('Address search failed');
+        const results = await res.json();
+        suggestions.innerHTML = results.map((item, index) =>
+          `<button type="button" class="address-suggestion" data-index="${index}">${sanitize(item.display_name)}</button>`
+        ).join('');
+        suggestions.querySelectorAll('.address-suggestion').forEach(button => {
+          button.addEventListener('click', () => {
+            const item = results[Number(button.dataset.index)];
+            const lat = Number(item.lat);
+            const lng = Number(item.lon);
+            input.value = item.display_name;
+            suggestions.innerHTML = '';
+            map.setView([lat, lng], 18);
+            onFound(lat, lng);
+          });
+        });
+      } catch (err) {
+        suggestions.innerHTML = '';
+        console.warn('[Address search]', err.message);
+      }
+    }, 350);
+  });
+
+  document.addEventListener('click', event => {
+    if (!event.target.closest('.address-autocomplete')) suggestions.innerHTML = '';
+  });
 }

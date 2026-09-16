@@ -482,6 +482,17 @@ function initNavbar() {
   const navbar = document.querySelector('.navbar');
   if (!navbar) return;
 
+  if (!navbar.querySelector('.helpline-strip')) {
+    const helpline = document.createElement('div');
+    helpline.className = 'helpline-strip';
+    helpline.innerHTML = `
+      <span>Need help?</span>
+      <a href="tel:7864043197">📞 7864043197</a>
+      <a href="tel:6295727553">📞 6295727553</a>
+    `;
+    navbar.prepend(helpline);
+  }
+
   window.addEventListener('scroll', () => {
     navbar.classList.toggle('scrolled', window.scrollY > 40);
   });
@@ -750,6 +761,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function initSupportWidget() {
   const container = document.createElement('div');
   container.innerHTML = `
+    <div class="room-seeker-popup" id="roomSeekerPopup" role="dialog" aria-label="Room seeker offer">
+      <button class="room-seeker-close" type="button" aria-label="Close" onclick="closeRoomSeekerPopup()">×</button>
+      <div class="room-seeker-icon">🎉</div>
+      <div>
+        <strong>Looking for a room?</strong>
+        <p>Room seekers pay <b>no charges</b> to browse, message owners, or find their next space.</p>
+        <a class="btn btn-primary btn-sm" href="listings.html?type=room">Find a Room →</a>
+      </div>
+    </div>
     <div class="support-widget-popup" id="supportPopup">
       <div class="support-widget-header">
         🎧 Customer Care & Support
@@ -767,6 +787,14 @@ function initSupportWidget() {
     </div>
   `;
   document.body.appendChild(container);
+  if (!location.pathname.endsWith('admin.html') && !sessionStorage.getItem('roomSeekerPopupClosed')) {
+    window.setTimeout(() => document.getElementById('roomSeekerPopup')?.classList.add('visible'), 1200);
+  }
+}
+
+function closeRoomSeekerPopup() {
+  sessionStorage.setItem('roomSeekerPopupClosed', '1');
+  document.getElementById('roomSeekerPopup')?.classList.remove('visible');
 }
 
 document.addEventListener('DOMContentLoaded', () => {

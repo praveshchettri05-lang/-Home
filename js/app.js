@@ -770,6 +770,15 @@ function initSupportWidget() {
         <a class="btn btn-primary btn-sm" href="listings.html?type=room">Find a Room →</a>
       </div>
     </div>
+    <div class="owner-promo-popup" id="ownerPromoPopup" role="dialog" aria-label="Property owner offer">
+      <button class="room-seeker-close" type="button" aria-label="Close" onclick="closeOwnerPromoPopup()">×</button>
+      <div class="room-seeker-icon">🏠</div>
+      <div>
+        <strong>Have a property to rent?</strong>
+        <p>List for free and pay only <b>10% of the first month's rent</b>. Featured placement is optional.</p>
+        <a class="btn btn-primary btn-sm" href="auth.html?role=owner">List Your Property →</a>
+      </div>
+    </div>
     <div class="support-widget-popup" id="supportPopup">
       <div class="support-widget-header">
         🎧 Customer Care & Support
@@ -790,11 +799,19 @@ function initSupportWidget() {
   if (!location.pathname.endsWith('admin.html') && !sessionStorage.getItem('roomSeekerPopupClosed')) {
     window.setTimeout(() => document.getElementById('roomSeekerPopup')?.classList.add('visible'), 1200);
   }
+  if (!location.pathname.endsWith('admin.html') && !sessionStorage.getItem('ownerPromoPopupClosed')) {
+    window.setTimeout(() => document.getElementById('ownerPromoPopup')?.classList.add('visible'), 6500);
+  }
 }
 
 function closeRoomSeekerPopup() {
   sessionStorage.setItem('roomSeekerPopupClosed', '1');
   document.getElementById('roomSeekerPopup')?.classList.remove('visible');
+}
+
+function closeOwnerPromoPopup() {
+  sessionStorage.setItem('ownerPromoPopupClosed', '1');
+  document.getElementById('ownerPromoPopup')?.classList.remove('visible');
 }
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -495,14 +495,16 @@
       </div>
       <div class="onboard-body">
         <div class="auth-methods">
+          <button class="auth-method-btn google" onclick="triggerGoogleLogin()">
+            <span class="method-icon">G</span>
+            Continue with Google
+            <span style="margin-left:auto;font-size:0.72rem;background:var(--gold);color:var(--walnut);padding:4px 8px;border-radius:999px;">Recommended</span>
+          </button>
+          <div class="divider-or">or</div>
           <button class="auth-method-btn email" onclick="goToEmail()">
             <span class="method-icon">✉️</span>
             Continue with Email &amp; Password
-            <span style="margin-left:auto;font-size:0.72rem;background:var(--gold);color:var(--walnut);padding:4px 8px;border-radius:999px;">Recommended</span>
           </button>
-          <p style="margin:14px 0 0;text-align:center;color:var(--gray-dk);font-size:0.8rem;">
-            Google sign-in is temporarily unavailable. Use email and password to continue.
-          </p>
         </div>
         <div class="progress-dots" style="margin-top:24px;">
           <div class="dot done"></div>
@@ -633,7 +635,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js?v=2"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js?v=2"></script>
 <script src="js/firebase-init.js?v=2"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/app.js?v=5"></script>
 <script src="js/map.js?v=2"></script>
 <script>
   /* ============================================================
@@ -878,7 +880,6 @@
   /* ── Google Login ── */
   async function triggerGoogleLogin() {
     const role = selectedRole || 'renter';
-    const provider = new firebase.auth.GoogleAuthProvider();
     try {
       sessionStorage.setItem('pendingGoogleAuth', '1');
       sessionStorage.setItem('pendingGoogleAuthData', JSON.stringify({
@@ -888,12 +889,17 @@
         address: userAddress
       }));
       showToast('Redirecting to Google sign-in…', 'info', 2000);
-      await window.auth.signInWithRedirect(provider);
+      if (!window.supabaseClient) throw new Error('Google sign-in is not configured yet.');
+      const { error } = await window.supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/auth.html` }
+      });
+      if (error) throw error;
     } catch (error) {
       sessionStorage.removeItem('pendingGoogleAuth');
       sessionStorage.removeItem('pendingGoogleAuthData');
-      const message = error.code === 'auth/unauthorized-domain'
-        ? 'This website is not authorized for Google sign-in. Add hoped.netlify.app in Firebase Authentication settings.'
+      const message = /not enabled|provider is not enabled/i.test(error.message || '')
+        ? 'Google sign-in is not enabled in Supabase yet.'
         : error.message || 'Google sign-in failed. Please try again.';
       showToast(message, 'error');
     }

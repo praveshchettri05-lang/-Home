@@ -662,9 +662,10 @@
     window.auth.onAuthStateChanged(async firebaseUser => {
       if (firebaseUser) {
         const s = Auth.getSession();
-        if (s) {
+        const pendingGoogle = sessionStorage.getItem('pendingGoogleAuth') === '1';
+        if (s && !pendingGoogle) {
           window.location.href = s.role + '-dashboard.html';
-        } else {
+        } else if (!pendingGoogle) {
           try {
             await window.auth.signOut();
           } catch (error) {
@@ -827,31 +828,68 @@
     goStep(3);
   }
 
+  async function finishGoogleRedirect() {
+    if (!window.auth) return;
+    try {
+      const result = await window.auth.getRedirectResult();
+      if (!result.user) return;
+
+      const pending = JSON.parse(sessionStorage.getItem('pendingGoogleAuthData') || '{}');
+      const role = pending.role === 'owner' ? 'owner' : 'renter';
+      const res = await Auth.handleProviderLogin(result.user, role, {
+        loginMethod: 'google',
+        lat: pending.lat || null,
+        lng: pending.lng || null,
+        address: pending.address || ''
+      });
+      sessionStorage.removeItem('pendingGoogleAuth');
+      sessionStorage.removeItem('pendingGoogleAuthData');
+      if (!res.ok) {
+        showToast(res.msg, 'error');
+        await window.auth.signOut();
+        return;
+      }
+      completeOnboarding(res.user.name);
+    } catch (error) {
+      sessionStorage.removeItem('pendingGoogleAuth');
+      sessionStorage.removeItem('pendingGoogleAuthData');
+      try { await window.auth.signOut(); } catch (signOutError) {
+        console.warn('[Auth] Could not clear failed Google session.', signOutError.message);
+      }
+      const message = error.code === 'auth/invalid-credential'
+        ? 'Google sign-in was rejected. Check the Firebase Google provider and authorized domain, then try again.'
+        : error.code === 'auth/unauthorized-domain'
+          ? 'This website is not authorized for Google sign-in. Add hoped.netlify.app in Firebase Authentication settings.'
+          : error.message || 'Google sign-in failed. Please try again.';
+      showToast(message, 'error');
+    }
+  }
+
   /* ── Google Login ── */
   async function triggerGoogleLogin() {
     const role = selectedRole || 'renter';
     const provider = new firebase.auth.GoogleAuthProvider();
     try {
-      showToast('Opening Google sign-in…', 'info', 2000);
-      const result = await firebase.auth().signInWithPopup(provider);
-      const res = await Auth.handleProviderLogin(result.user, role, { loginMethod: 'google', lat: userLat, lng: userLng, address: userAddress });
-      if (!res.ok) {
-        showToast(res.msg, 'error');
-        return;
-      }
-      completeOnboarding(res.user.name);
+      sessionStorage.setItem('pendingGoogleAuth', '1');
+      sessionStorage.setItem('pendingGoogleAuthData', JSON.stringify({
+        role,
+        lat: userLat,
+        lng: userLng,
+        address: userAddress
+      }));
+      showToast('Redirecting to Google sign-in…', 'info', 2000);
+      await window.auth.signInWithRedirect(provider);
     } catch (error) {
-      try { await firebase.auth().signOut(); } catch (signOutError) {
-        console.warn('[Auth] Could not clear failed Google session.', signOutError.message);
-      }
-      const message = error.code === 'auth/invalid-credential'
-        ? 'Google sign-in expired. Please try again.'
-        : error.code === 'auth/popup-closed-by-user'
-          ? 'Google sign-in was cancelled.'
-          : error.message || 'Google sign-in failed. Please try again.';
+      sessionStorage.removeItem('pendingGoogleAuth');
+      sessionStorage.removeItem('pendingGoogleAuthData');
+      const message = error.code === 'auth/unauthorized-domain'
+        ? 'This website is not authorized for Google sign-in. Add hoped.netlify.app in Firebase Authentication settings.'
+        : error.message || 'Google sign-in failed. Please try again.';
       showToast(message, 'error');
     }
   }
+
+  finishGoogleRedirect();
 
   /* ── Email / Password ── */
   function goToEmail() { showStep('step-email'); setEmailMode('register'); }

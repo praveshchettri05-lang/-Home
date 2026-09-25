@@ -675,7 +675,20 @@
         }
       }
     });
-  } else if (Auth.isLoggedIn()) {
+  }
+
+  // Restore Supabase email sessions after a page refresh. Demo/local and
+  // Firebase admin sessions remain independent of this provider session.
+  if (window.supabaseClient) {
+    window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      if (session && !Auth.getSession()) {
+        const role = session.user.user_metadata?.role === 'owner' ? 'owner' : 'renter';
+        const result = await Auth.handleSupabaseLogin(session.user, role);
+        if (result.ok) window.location.href = role + '-dashboard.html';
+      }
+    });
+  }
+  if (!window.auth && !window.supabaseClient && Auth.isLoggedIn()) {
     const s = Auth.getSession();
     window.location.href = s.role + '-dashboard.html';
   }

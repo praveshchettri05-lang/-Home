@@ -132,7 +132,7 @@ function showToast(msg, type = 'info', duration = 3500) {
 }
 
 // ═══════════════════════════════════════
-// AUTHENTICATION (Real Firebase Auth)
+// AUTHENTICATION (Supabase email/password + local demo accounts)
 // ═══════════════════════════════════════
 const Auth = {
   ADMIN_EMAIL:    'praveshchettri05@gmail.com',
@@ -194,9 +194,13 @@ const Auth = {
     }
 
     try {
-      if (!window.auth) throw new Error("Firebase not initialized");
-      const cred = await window.auth.signInWithEmailAndPassword(normalizedEmail, password);
-      return await this.handleProviderLogin(cred.user, role, { loginMethod: 'email' });
+      if (!window.supabaseClient) throw new Error('Supabase is not configured');
+      const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+        email: normalizedEmail,
+        password
+      });
+      if (error) throw error;
+      return await this.handleSupabaseLogin(data.user, role);
     } catch (err) {
       const accountWithEmail = localAccounts.find(user =>
         String(user.email || '').toLowerCase() === normalizedEmail
@@ -207,10 +211,7 @@ const Auth = {
           msg: `This account is registered as a ${accountWithEmail.accountRole}. Select that role and try again.`,
         };
       }
-      if (err.code === 'auth/operation-not-allowed') {
-        return { ok: false, msg: 'Email/password login is not enabled yet. Please enable it in Firebase Authentication.' };
-      }
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      if (err.message && /invalid login credentials/i.test(err.message)) {
         return { ok: false, msg: 'Incorrect email or password.' };
       }
       return { ok: false, msg: err.message || 'Unable to sign in.' };
@@ -219,9 +220,7 @@ const Auth = {
 
   async registerRenter(data) {
     try {
-      if (!window.auth) throw new Error("Firebase not initialized");
-      const cred = await window.auth.createUserWithEmailAndPassword(data.email, data.password);
-      return await this.handleProviderLogin(cred.user, 'renter', data);
+      return await this.registerWithSupabase(data, 'renter');
     } catch (err) {
       return { ok: false, msg: err.message };
     }
@@ -229,27 +228,64 @@ const Auth = {
 
   async registerOwner(data) {
     try {
-      if (!window.auth) throw new Error("Firebase not initialized");
-      const cred = await window.auth.createUserWithEmailAndPassword(data.email, data.password);
-      return await this.handleProviderLogin(cred.user, 'owner', data);
+      return await this.registerWithSupabase(data, 'owner');
     } catch (err) {
       return { ok: false, msg: err.message };
     }
   },
 
-  async handleProviderLogin(firebaseUser, role, extraData = {}) {
+  async registerWithSupabase(data, role) {
+    if (!window.supabaseClient) throw new Error('Supabase is not configured');
+    const metadata = {
+      role,
+      name: data.name || '',
+      phone: data.phone || '',
+      city: data.city || '',
+      lat: data.lat || null,
+      lng: data.lng || null,
+      address: data.address || ''
+    };
+    const { data: result, error } = await window.supabaseClient.auth.signUp({
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+      options: { data: metadata }
+    });
+    if (error) throw error;
+    if (!result.user) throw new Error('Unable to create account.');
+    if (!result.session) {
+      return { ok: false, msg: 'Account created. Check your email to confirm your address, then log in.' };
+    }
+    return await this.handleSupabaseLogin(result.user, role, metadata);
+  },
+
+  async handleSupabaseLogin(supabaseUser, role, extraData = {}) {
+    const metadata = supabaseUser.user_metadata || {};
+    const actualRole = metadata.role === 'owner' || metadata.role === 'renter'
+      ? metadata.role : role;
+    if (role && actualRole !== role) {
+      return { ok: false, msg: `This account is registered as a ${actualRole}. Select that role and try again.` };
+    }
+    return await this.handleProviderLogin({
+      uid: supabaseUser.id,
+      email: supabaseUser.email,
+      displayName: metadata.name,
+      phoneNumber: metadata.phone
+    }, actualRole, { ...metadata, ...extraData });
+  },
+
+  async handleProviderLogin(providerUser, role, extraData = {}) {
     // Wait a tiny bit for cloud sync if necessary
     await new Promise(r => setTimeout(r, 800));
     const list = getDB(role === 'owner' ? DB.OWNERS : DB.USERS);
-    let user = list.find(u => u.id === firebaseUser.uid || u.email === firebaseUser.email);
+    let user = list.find(u => u.id === providerUser.uid || u.email === providerUser.email);
 
     if (!user) {
       // Create new user profile in Firestore
       user = {
-        id: firebaseUser.uid,
-        name: extraData.name || firebaseUser.displayName || 'User',
-        email: firebaseUser.email || extraData.email || '',
-        phone: firebaseUser.phoneNumber || extraData.phone || '',
+        id: providerUser.uid,
+        name: extraData.name || providerUser.displayName || 'User',
+        email: providerUser.email || extraData.email || '',
+        phone: providerUser.phoneNumber || extraData.phone || '',
         role: role,
         status: 'active',
         createdAt: now(),
@@ -265,7 +301,8 @@ const Auth = {
       cloudSet(role === 'owner' ? 'owners' : 'users', user.id, user);
     } else {
       if (user.status === 'suspended') {
-        window.auth.signOut();
+        if (window.supabaseClient) window.supabaseClient.auth.signOut();
+        if (window.auth) window.auth.signOut();
         return { ok: false, msg: 'Account suspended' };
       }
     }
@@ -276,6 +313,7 @@ const Auth = {
   },
 
   async logout() {
+    if (window.supabaseClient) await window.supabaseClient.auth.signOut();
     if (window.auth) await window.auth.signOut();
     localStorage.removeItem(DB.SESSION);
     window.location.href = 'auth.html';

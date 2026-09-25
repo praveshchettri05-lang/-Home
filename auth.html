@@ -636,7 +636,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js?v=2"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js?v=2"></script>
 <script src="js/firebase-init.js?v=2"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/app.js?v=3"></script>
 <script src="js/map.js?v=2"></script>
 <script>
   /* ============================================================
@@ -654,14 +654,22 @@
     selectedRole = urlRole;
   }
 
-  // Fix: use onAuthStateChanged so we wait for Firebase auth to resolve
-  // before redirecting — prevents auth page flash for logged-in users
+  // Wait for Firebase auth to resolve, but clear a stale provider session
+  // when the app has no matching local session. This prevents an expired
+  // Google credential from repeatedly surfacing an auth/invalid-credential
+  // error on the onboarding page.
   if (window.auth) {
-    window.auth.onAuthStateChanged(firebaseUser => {
+    window.auth.onAuthStateChanged(async firebaseUser => {
       if (firebaseUser) {
         const s = Auth.getSession();
         if (s) {
           window.location.href = s.role + '-dashboard.html';
+        } else {
+          try {
+            await window.auth.signOut();
+          } catch (error) {
+            console.warn('[Auth] Could not clear stale provider session.', error.message);
+          }
         }
       }
     });
@@ -833,7 +841,15 @@
       }
       completeOnboarding(res.user.name);
     } catch (error) {
-      showToast(error.message || 'Google sign-in failed. Please try again.', 'error');
+      try { await firebase.auth().signOut(); } catch (signOutError) {
+        console.warn('[Auth] Could not clear failed Google session.', signOutError.message);
+      }
+      const message = error.code === 'auth/invalid-credential'
+        ? 'Google sign-in expired. Please try again.'
+        : error.code === 'auth/popup-closed-by-user'
+          ? 'Google sign-in was cancelled.'
+          : error.message || 'Google sign-in failed. Please try again.';
+      showToast(message, 'error');
     }
   }
 
@@ -935,4 +951,3 @@
 </script>
 </body>
 </html>
-

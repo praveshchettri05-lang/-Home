@@ -800,7 +800,13 @@ function initSupportWidget() {
     window.setTimeout(() => document.getElementById('roomSeekerPopup')?.classList.add('visible'), 1200);
   }
   if (!location.pathname.endsWith('admin.html') && !sessionStorage.getItem('ownerPromoPopupClosed')) {
-    window.setTimeout(() => document.getElementById('ownerPromoPopup')?.classList.add('visible'), 6500);
+    window.setTimeout(() => {
+      const roomPopup = document.getElementById('roomSeekerPopup');
+      const ownerPopup = document.getElementById('ownerPromoPopup');
+      if (!ownerPopup) return;
+      roomPopup?.classList.remove('visible');
+      ownerPopup.classList.add('visible');
+    }, 6500);
   }
 }
 
